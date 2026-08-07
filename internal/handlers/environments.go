@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
+
 	"server-access-manager/internal/middleware"
 	"server-access-manager/internal/repository"
 )
@@ -94,6 +96,38 @@ func (h *EnvironmentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/environments", http.StatusSeeOther)
+}
+
+func (h *EnvironmentHandler) Edit(w http.ResponseWriter, r *http.Request) {
+	// Get ID from URL parameter
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	env, err := h.envs.GetByID(id)
+	if err != nil {
+		http.Error(w, "Environment not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Environment": env,
+		"CSRFToken":   middleware.CSRFToken(r),
+	}
+
+	tmpl, err := template.ParseFiles(
+		filepath.Join("internal", "templates", "admin", "environment_edit.html"),
+	)
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
 }
 
 func (h *EnvironmentHandler) Delete(w http.ResponseWriter, r *http.Request) {

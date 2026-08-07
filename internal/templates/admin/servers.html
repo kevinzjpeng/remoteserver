@@ -38,10 +38,10 @@
     </header>
 
     <main class="container">
-        <h1>Server Management</h1>
+        <h1 style="color: #24292e; margin-bottom: 1.5rem;">Server Management</h1>
 
         <div x-data="{ showForm: false }">
-            <button @click="showForm = !showForm" class="contrast outline">
+            <button @click="showForm = !showForm" style="background-color: #24292e; color: white; border: none; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; border-radius: 6px;">
                 <span x-show="!showForm">+ Add Server</span>
                 <span x-show="showForm">Cancel</span>
             </button>
@@ -140,7 +140,7 @@
             </div>
         </div>
 
-        <h2>Servers</h2>
+        <h2 style="margin-top: 2rem; border-bottom: 2px solid #e1e4e8; padding-bottom: 0.5rem; color: #24292e;">Servers</h2>
         <div id="servers-list">
             {{if .Servers}}
             <table role="grid">
@@ -172,7 +172,7 @@
                         </td>
                         <td>{{.AuthType}}</td>
                         <td>
-                            <button class="outline" hx-delete="/admin/servers?id={{.ID}}" hx-target="#server-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this server?">
+                            <button class="secondary" hx-delete="/admin/servers?id={{.ID}}" hx-target="#server-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this server?">
                                 Delete
                             </button>
                         </td>

@@ -38,10 +38,10 @@
     </header>
 
     <main class="container">
-        <h1>Environment Management</h1>
+        <h1 style="color: #24292e; margin-bottom: 1.5rem;">Environment Management</h1>
 
         <div x-data="{ showForm: false }">
-            <button @click="showForm = !showForm" class="contrast outline">
+            <button @click="showForm = !showForm" style="background-color: #24292e; color: white; border: none; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; border-radius: 6px;">
                 <span x-show="!showForm">+ Add Environment</span>
                 <span x-show="showForm">Cancel</span>
             </button>
@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <h2>Environments</h2>
+        <h2 style="margin-top: 2rem; border-bottom: 2px solid #e1e4e8; padding-bottom: 0.5rem; color: #24292e;">Environments</h2>
         <div id="environments-list">
             {{if .Environments}}
             <table role="grid">
@@ -97,7 +97,10 @@
                         <td>{{.Description}}</td>
                         <td>{{.DisplayOrder}}</td>
                         <td>
-                            <button class="outline" hx-delete="/admin/environments?id={{.ID}}" hx-target="#env-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this environment?">
+                            <button class="secondary outline" hx-get="/admin/environments/{{.ID}}/edit" hx-target="#env-{{.ID}}" hx-swap="outerHTML">
+                                Edit
+                            </button>
+                            <button class="secondary" hx-delete="/admin/environments?id={{.ID}}" hx-target="#env-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this environment?">
                                 Delete
                             </button>
                         </td>

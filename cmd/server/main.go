@@ -101,6 +101,7 @@ func main() {
 			r.Post("/environments", envHandler.Create)
 			r.Put("/environments", envHandler.Update)
 			r.Delete("/environments", envHandler.Delete)
+			r.Get("/environments/{id}/edit", envHandler.Edit)
 
 			// Servers
 			r.Get("/servers", serverHandler.List)
