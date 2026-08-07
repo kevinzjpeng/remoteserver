@@ -43,11 +43,12 @@ func (r *ServerRepository) GetAll() ([]models.Server, error) {
 		var tagsJSON sql.NullString
 		var envID sql.NullInt64
 		var envName, envColor sql.NullString
+		var lastAccessed sql.NullTime
 
 		err := rows.Scan(
 			&server.ID, &server.Name, &server.Hostname, &server.Port, &server.Username,
 			&envID, &server.AuthType, &server.Description, &server.OSType, &tagsJSON,
-			&server.Notes, &server.CreatedAt, &server.UpdatedAt, &server.LastAccessed,
+			&server.Notes, &server.CreatedAt, &server.UpdatedAt, &lastAccessed,
 			&envID, &envName, &envColor,
 		)
 		if err != nil {
@@ -68,6 +69,11 @@ func (r *ServerRepository) GetAll() ([]models.Server, error) {
 			}
 		}
 
+		// Set last accessed if not null
+		if lastAccessed.Valid {
+			server.LastAccessed = lastAccessed.Time
+		}
+
 		servers = append(servers, server)
 	}
 	return servers, nil
@@ -78,6 +84,7 @@ func (r *ServerRepository) GetByID(id int64) (*models.Server, error) {
 	var tagsJSON sql.NullString
 	var envID sql.NullInt64
 	var envName, envColor sql.NullString
+	var lastAccessed sql.NullTime
 
 	err := r.db.QueryRow(
 		`SELECT s.id, s.name, s.hostname, s.port, s.username, s.environment_id,
@@ -90,7 +97,7 @@ func (r *ServerRepository) GetByID(id int64) (*models.Server, error) {
 	).Scan(
 		&server.ID, &server.Name, &server.Hostname, &server.Port, &server.Username,
 		&envID, &server.AuthType, &server.Description, &server.OSType, &tagsJSON,
-		&server.Notes, &server.CreatedAt, &server.UpdatedAt, &server.LastAccessed,
+		&server.Notes, &server.CreatedAt, &server.UpdatedAt, &lastAccessed,
 		&envID, &envName, &envColor,
 	)
 	if err != nil {
@@ -107,6 +114,11 @@ func (r *ServerRepository) GetByID(id int64) (*models.Server, error) {
 			Name:  envName.String,
 			Color: envColor.String,
 		}
+	}
+
+	// Set last accessed if not null
+	if lastAccessed.Valid {
+		server.LastAccessed = lastAccessed.Time
 	}
 
 	return server, nil

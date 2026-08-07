@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -95,7 +96,8 @@ func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.servers.Create(server)
 	if err != nil {
-		http.Error(w, "Failed to create server", http.StatusInternalServerError)
+		log.Printf("Failed to create server: %v", err)
+		http.Error(w, "Failed to create server: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
