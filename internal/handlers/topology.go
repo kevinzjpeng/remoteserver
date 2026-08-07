@@ -62,7 +62,11 @@ func (h *TopologyHandler) GetTopology(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := TopologyResponse{}
+	response := TopologyResponse{
+		Nodes:  []TopologyNode{},
+		Edges:  []TopologyEdge{},
+		Groups: []TopologyGroup{},
+	}
 
 	// Build nodes
 	for _, server := range servers {

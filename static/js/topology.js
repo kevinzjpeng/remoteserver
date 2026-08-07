@@ -22,8 +22,13 @@ function renderTopology(data) {
     // Prepare elements for Cytoscape
     const elements = [];
 
+    // Default to empty arrays if data is null
+    const groups = data.groups || [];
+    const nodes = data.nodes || [];
+    const edges = data.edges || [];
+
     // Add compound nodes for environment groups
-    data.groups.forEach(group => {
+    groups.forEach(group => {
         elements.push({
             data: {
                 id: 'group-' + group.id,
@@ -34,7 +39,7 @@ function renderTopology(data) {
     });
 
     // Add server nodes
-    data.nodes.forEach(node => {
+    nodes.forEach(node => {
         elements.push({
             data: {
                 id: 'node-' + node.id,
@@ -47,7 +52,7 @@ function renderTopology(data) {
     });
 
     // Add edges
-    data.edges.forEach(edge => {
+    edges.forEach(edge => {
         elements.push({
             data: {
                 id: 'edge-' + edge.source + '-' + edge.target,

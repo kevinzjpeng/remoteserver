@@ -1,0 +1,70 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+
+<div class="grid">
+    <article>
+        <header>Environments</header>
+        <p style="font-size: 2em; font-weight: bold;">{{len .Environments}}</p>
+        <footer>
+            <a href="/admin/environments" class="secondary">Manage →</a>
+        </footer>
+    </article>
+
+    <article>
+        <header>Servers</header>
+        <p style="font-size: 2em; font-weight: bold;">{{len .Servers}}</p>
+        <footer>
+            <a href="/admin/servers" class="secondary">Manage →</a>
+        </footer>
+    </article>
+
+    <article>
+        <header>Quick Actions</header>
+        <ul>
+            <li><a href="/admin/servers">Add Server</a></li>
+            <li><a href="/admin/environments">Add Environment</a></li>
+            <li><a href="/topology">View Topology</a></li>
+        </ul>
+    </article>
+</div>
+
+<h2>Recent Servers</h2>
+{{if .Servers}}
+<table role="grid">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Hostname</th>
+            <th>Environment</th>
+            <th>OS</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Servers}}
+        <tr>
+            <td>{{.Name}}</td>
+            <td>{{.Hostname}}</td>
+            <td>{{if .Environment}}{{.Environment.Name}}{{else}}-{{end}}</td>
+            <td>{{.OSType}}</td>
+            <td>
+                <button class="outline" hx-get="/admin/servers/{{.ID}}/edit" hx-target="#modal-content" hx-swap="innerHTML">Edit</button>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p>No servers yet. <a href="/admin/servers">Add your first server</a>.</p>
+{{end}}
+
+<div id="modal" class="modal" style="display:none;">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="document.getElementById('modal').style.display='none'"></button>
+            <h3>Edit Server</h3>
+        </header>
+        <div id="modal-content"></div>
+    </article>
+</div>
+{{end}}

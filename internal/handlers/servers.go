@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
+	"html/template"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -27,15 +28,31 @@ func (h *ServerHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := middleware.GetUser(r)
-	data := map[string]interface{}{
-		"Servers":   servers,
-		"User":      user,
-		"CSRFToken": middleware.CSRFToken(r),
+	envs, err := h.envs.GetAll()
+	if err != nil {
+		http.Error(w, "Failed to load environments", http.StatusInternalServerError)
+		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	user := middleware.GetUser(r)
+	data := map[string]interface{}{
+		"Title":        "Servers",
+		"Servers":      servers,
+		"Environments": envs,
+		"User":         user,
+		"CSRFToken":    middleware.CSRFToken(r),
+	}
+
+	tmpl, err := template.ParseFiles(
+		filepath.Join("internal", "templates", "admin", "servers.html"),
+	)
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
 }
 
 func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -76,14 +93,14 @@ func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	created, err := h.servers.Create(server)
+	_, err := h.servers.Create(server)
 	if err != nil {
 		http.Error(w, "Failed to create server", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(created)
+	// Redirect back to servers list
+	http.Redirect(w, r, "/admin/servers", http.StatusSeeOther)
 }
 
 func (h *ServerHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +152,7 @@ func (h *ServerHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	http.Redirect(w, r, "/admin/servers", http.StatusSeeOther)
 }
 
 func (h *ServerHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -151,5 +168,6 @@ func (h *ServerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// Return empty response for HTMX
+	w.WriteHeader(http.StatusOK)
 }

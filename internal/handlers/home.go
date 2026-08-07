@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
+	"html/template"
 	"net/http"
+	"path/filepath"
 
 	"server-access-manager/internal/middleware"
 	"server-access-manager/internal/repository"
@@ -32,12 +33,21 @@ func (h *HomeHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUser(r)
 	data := map[string]interface{}{
+		"Title":        "Dashboard",
 		"Servers":      servers,
 		"Environments": envs,
 		"User":         user,
 		"CSRFToken":    middleware.CSRFToken(r),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	tmpl, err := template.ParseFiles(
+		filepath.Join("internal", "templates", "dashboard.html"),
+	)
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
 }

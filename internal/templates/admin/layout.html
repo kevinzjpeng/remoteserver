@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Server Access Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pico-css@1.0.0/dist/pico.min.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>🖥️ Server Access Manager</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/topology">Topology</a></li>
+                <li>
+                    <details class="dropdown">
+                        <summary>{{.User.Username}}</summary>
+                        <dir>
+                            <ul>
+                                <li><a href="/admin/environments">Environments</a></li>
+                                <li><a href="/admin/servers">Servers</a></li>
+                                <li><a href="/admin/credentials">Credentials</a></li>
+                                <li><a href="/admin/logs">Logs</a></li>
+                                <li><a href="/logout" onclick="event.preventDefault(); fetch('/logout', {method: 'POST'}).then(() => window.location.href='/login')">Logout</a></li>
+                            </ul>
+                        </dir>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        {{template "content" .}}
+    </main>
+
+    <footer class="container">
+        <small>Server Access Manager | Built with Go</small>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
