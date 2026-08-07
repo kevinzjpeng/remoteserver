@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Access Manager - Topology</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🖥️ Server Access Manager</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="topology-container">
+            <h2>Infrastructure Topology</h2>
+            <div id="topology-container"></div>
+            <div id="node-details"></div>
+        </div>
+
+        <div class="info-box">
+            <h3>About This Application</h3>
+            <p>This is a server access management system built with Go. It provides:</p>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>SSH credential storage with encryption</li>
+                <li>GitHub OAuth authentication</li>
+                <li>Admin panel for managing credentials</li>
+                <li>Auto-generated topology diagrams</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>API Endpoints</h3>
+            <p>The application provides the following JSON API endpoints:</p>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li><code>GET /</code> - Dashboard</li>
+                <li><code>GET /api/topology</code> - Topology data</li>
+                <li><code>GET /admin/environments</code> - List environments</li>
+                <li><code>GET /admin/servers</code> - List servers</li>
+                <li><code>GET /admin/credentials</code> - List credentials</li>
+                <li><code>GET /admin/logs</code> - List access logs</li>
+            </ul>
+            <p style="margin-top: 10px;">Try it: <a href="/api/topology" target="_blank">View Topology JSON</a></p>
+        </div>
+    </main>
+
+    <footer>
+        <p>Server Access Manager - Built with Go, Chi, SQLite, and Cytoscape.js</p>
+    </footer>
+
+    <script src="/static/js/topology.js"></script>
+</body>
+</html>

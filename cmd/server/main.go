@@ -67,10 +67,19 @@ func main() {
 	r.Use(appmiddleware.Logging)
 	r.Use(appmiddleware.Recovery)
 
+	// Serve static files
+	fileServer := http.FileServer(http.Dir("static"))
+	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+
 	// Public routes
 	r.Get("/login", authHandler.Login)
 	r.Get("/auth/github/callback", authHandler.Callback)
 	r.Post("/logout", authHandler.Logout)
+
+	// Serve topology HTML page (no auth required for viewing)
+	r.Get("/topology", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "internal/templates/topology.html")
+	})
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
