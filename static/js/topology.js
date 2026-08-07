@@ -46,7 +46,10 @@ function renderTopology(data) {
                 name: node.name,
                 parent: 'group-' + node.environment,
                 type: node.type,
-                status: node.status
+                status: node.status,
+                username: node.username,
+                hostname: node.hostname,
+                port: node.port
             }
         });
     });
@@ -122,7 +125,16 @@ function renderTopology(data) {
     // Add click handlers
     cy.on('tap', 'node[parent^="group-"]', function(evt) {
         const node = evt.target;
-        showNodeDetails(node.data());
+        const data = node.data();
+
+        // If the node has connection details, open SSH terminal
+        if (data.username && data.hostname) {
+            const sshUrl = `ssh://${data.username}@${data.hostname}${data.port && data.port !== 22 ? ':' + data.port : ''}`;
+            window.open(sshUrl, '_blank');
+        } else {
+            // Otherwise show details
+            showNodeDetails(data);
+        }
     });
 
     // Auto-refresh every 30 seconds

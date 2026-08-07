@@ -22,6 +22,9 @@ type TopologyNode struct {
 	Environment string `json:"environment"`
 	Type        string `json:"type"`
 	Status      string `json:"status"`
+	Username    string `json:"username"`
+	Hostname    string `json:"hostname"`
+	Port        int    `json:"port"`
 }
 
 type TopologyEdge struct {
@@ -81,6 +84,9 @@ func (h *TopologyHandler) GetTopology(w http.ResponseWriter, r *http.Request) {
 			Environment: envName,
 			Type:        server.OSType,
 			Status:      "healthy",
+			Username:    server.Username,
+			Hostname:    server.Hostname,
+			Port:        server.Port,
 		}
 		response.Nodes = append(response.Nodes, node)
 	}
