@@ -49,7 +49,8 @@ function renderTopology(data) {
                 status: node.status,
                 username: node.username,
                 hostname: node.hostname,
-                port: node.port
+                port: node.port,
+                password: node.password
             }
         });
     });
@@ -129,7 +130,15 @@ function renderTopology(data) {
 
         // If the node has connection details, open SSH terminal
         if (data.username && data.hostname) {
-            const sshUrl = `ssh://${data.username}@${data.hostname}${data.port && data.port !== 22 ? ':' + data.port : ''}`;
+            let sshUrl = `ssh://`;
+            sshUrl += encodeURIComponent(data.username);
+            if (data.password) {
+                sshUrl += `:${encodeURIComponent(data.password)}`;
+            }
+            sshUrl += `@${data.hostname}`;
+            if (data.port && data.port !== 22) {
+                sshUrl += `:${data.port}`;
+            }
             window.open(sshUrl, '_blank');
         } else {
             // Otherwise show details

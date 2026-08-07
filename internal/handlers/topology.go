@@ -25,6 +25,7 @@ type TopologyNode struct {
 	Username    string `json:"username"`
 	Hostname    string `json:"hostname"`
 	Port        int    `json:"port"`
+	Password    string `json:"password,omitempty"`
 }
 
 type TopologyEdge struct {
@@ -78,6 +79,14 @@ func (h *TopologyHandler) GetTopology(w http.ResponseWriter, r *http.Request) {
 			envName = server.Environment.Name
 		}
 
+		// Fetch password if auth type is password
+		password := ""
+		if server.AuthType == "password" {
+			if pwd, err := h.servers.GetPassword(server.ID); err == nil {
+				password = pwd
+			}
+		}
+
 		node := TopologyNode{
 			ID:          string(rune(server.ID)),
 			Name:        server.Name,
@@ -87,6 +96,7 @@ func (h *TopologyHandler) GetTopology(w http.ResponseWriter, r *http.Request) {
 			Username:    server.Username,
 			Hostname:    server.Hostname,
 			Port:        server.Port,
+			Password:    password,
 		}
 		response.Nodes = append(response.Nodes, node)
 	}
