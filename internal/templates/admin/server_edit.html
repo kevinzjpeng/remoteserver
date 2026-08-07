@@ -1,0 +1,79 @@
+<tr id="server-{{.Server.ID}}">
+    <td colspan="5">
+        <form hx-put="/admin/servers?id={{.Server.ID}}" hx-swap="outerHTML" hx-target="#server-{{.Server.ID}}">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+            <h3 style="margin-top: 0;">Edit Server: {{.Server.Name}}</h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Name *</label>
+                    <input type="text" name="name" value="{{.Server.Name}}" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Hostname *</label>
+                    <input type="text" name="hostname" value="{{.Server.Hostname}}" required style="width: 100%;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Username *</label>
+                    <input type="text" name="username" value="{{.Server.Username}}" required style="width: 100%;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Port</label>
+                    <input type="number" name="port" value="{{.Server.Port}}" style="width: 100%;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Environment</label>
+                    <select name="environment_id" style="width: 100%;">
+                        <option value="">-- None --</option>
+                        {{range .Environments}}
+                        <option value="{{.ID}}" {{if $.Server.EnvironmentID}}{{if eq .ID (index $.Server.EnvironmentID)}}selected{{end}}{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">OS Type</label>
+                    <select name="os_type" style="width: 100%;">
+                        <option value="linux" {{if eq .Server.OSType "linux"}}selected{{end}}>Linux</option>
+                        <option value="windows" {{if eq .Server.OSType "windows"}}selected{{end}}>Windows</option>
+                        <option value="macos" {{if eq .Server.OSType "macos"}}selected{{end}}>macOS</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Auth Type</label>
+                <select name="auth_type" style="width: 100%;">
+                    <option value="password" {{if eq .Server.AuthType "password"}}selected{{end}}>Password</option>
+                    <option value="key" {{if eq .Server.AuthType "key"}}selected{{end}}>SSH Key</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
+                <textarea name="description" rows="2" style="width: 100%;">{{.Server.Description}}</textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Tags (comma-separated)</label>
+                <input type="text" name="tags" value="{{join .Server.Tags ","}}" style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Notes</label>
+                <textarea name="notes" rows="2" style="width: 100%;">{{.Server.Notes}}</textarea>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px;">Save</button>
+                <button type="button" class="secondary outline" hx-get="/admin/servers" hx-target="body" hx-swap="innerHTML">Cancel</button>
+            </div>
+        </form>
+    </td>
+</tr>

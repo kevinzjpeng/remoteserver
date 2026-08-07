@@ -108,6 +108,7 @@ func main() {
 			r.Post("/servers", serverHandler.Create)
 			r.Put("/servers", serverHandler.Update)
 			r.Delete("/servers", serverHandler.Delete)
+			r.Get("/servers/{id}/edit", serverHandler.Edit)
 
 			// Credentials
 			r.Get("/credentials", credHandler.List)

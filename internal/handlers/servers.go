@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
+
 	"server-access-manager/internal/middleware"
 	"server-access-manager/internal/models"
 	"server-access-manager/internal/repository"
@@ -172,4 +174,49 @@ func (h *ServerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	// Return empty response for HTMX
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *ServerHandler) Edit(w http.ResponseWriter, r *http.Request) {
+	// Get ID from URL parameter
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	server, err := h.servers.GetByID(id)
+	if err != nil {
+		http.Error(w, "Server not found", http.StatusNotFound)
+		return
+	}
+
+	envs, err := h.envs.GetAll()
+	if err != nil {
+		http.Error(w, "Failed to load environments", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Server":       server,
+		"Environments": envs,
+		"CSRFToken":    middleware.CSRFToken(r),
+	}
+
+	funcMap := template.FuncMap{
+		"join": func(tags []string, sep string) string {
+			return strings.Join(tags, sep)
+		},
+	}
+
+	tmpl, err := template.New("server_edit.html").Funcs(funcMap).ParseFiles(
+		filepath.Join("internal", "templates", "admin", "server_edit.html"),
+	)
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
 }

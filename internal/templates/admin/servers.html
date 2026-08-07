@@ -172,6 +172,9 @@
                         </td>
                         <td>{{.AuthType}}</td>
                         <td>
+                            <button class="secondary outline" hx-get="/admin/servers/{{.ID}}/edit" hx-target="#server-{{.ID}}" hx-swap="outerHTML">
+                                Edit
+                            </button>
                             <button class="secondary" hx-delete="/admin/servers?id={{.ID}}" hx-target="#server-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this server?">
                                 Delete
                             </button>
