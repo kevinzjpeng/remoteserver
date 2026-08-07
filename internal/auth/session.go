@@ -54,7 +54,7 @@ func (m *SessionManager) CreateSession(w http.ResponseWriter, userID int64, user
 		Value:    encrypted,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(m.duration.Seconds()),
 	})
@@ -93,7 +93,7 @@ func (m *SessionManager) ClearSession(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})

@@ -38,7 +38,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   600, // 10 minutes
 	})
@@ -68,7 +68,7 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})
