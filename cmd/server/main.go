@@ -81,6 +81,9 @@ func main() {
 		http.ServeFile(w, r, "internal/templates/topology.html")
 	})
 
+	// Public API endpoints
+	r.Get("/api/topology", topoHandler.GetTopology)
+
 	// Protected routes
 	r.Group(func(r chi.Router) {
 		r.Use(appmiddleware.Auth(sessions))
@@ -88,9 +91,6 @@ func main() {
 
 		// Dashboard
 		r.Get("/", homeHandler.Dashboard)
-
-		// Topology
-		r.Get("/api/topology", topoHandler.GetTopology)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {
