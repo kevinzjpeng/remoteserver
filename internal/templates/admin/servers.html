@@ -1,147 +1,193 @@
-{{define "content"}}
-<h1>Server Management</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servers - Server Access Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>🖥️ Server Access Manager</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/topology">Topology</a></li>
+                <li>
+                    <details class="dropdown">
+                        <summary>{{.User.Username}}</summary>
+                        <dir>
+                            <ul>
+                                <li><a href="/admin/environments">Environments</a></li>
+                                <li><a href="/admin/servers">Servers</a></li>
+                                <li><a href="/admin/credentials">Credentials</a></li>
+                                <li><a href="/admin/logs">Logs</a></li>
+                                <li><a href="/logout" onclick="event.preventDefault(); fetch('/logout', {method: 'POST'}).then(() => window.location.href='/login')">Logout</a></li>
+                            </ul>
+                        </dir>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+    </header>
 
-<div x-data="{ showForm: false }">
-    <button @click="showForm = !showForm" class="contrast">
-        <span x-show="!showForm">+ Add Server</span>
-        <span x-show="showForm">Cancel</span>
-    </button>
+    <main class="container">
+        <h1>Server Management</h1>
 
-    <div x-show="showForm" x-transition>
-        <article>
-            <form hx-post="/admin/servers" hx-target="#servers-list" hx-swap="outerHTML">
-                <h3>Basic Information</h3>
-                <div class="grid">
-                    <label>
-                        Name *
-                        <input type="text" name="name" required placeholder="e.g., web-prod-01">
-                    </label>
-                    <label>
-                        Hostname *
-                        <input type="text" name="hostname" required placeholder="e.g., 192.168.1.100">
-                    </label>
-                </div>
-                <div class="grid">
-                    <label>
-                        Username *
-                        <input type="text" name="username" required placeholder="e.g., deploy">
-                    </label>
-                    <label>
-                        Port
-                        <input type="number" name="port" value="22">
-                    </label>
-                </div>
-                <div class="grid">
-                    <label>
-                        Environment
-                        <select name="environment_id">
-                            <option value="">-- None --</option>
-                            {{range .Environments}}
-                            <option value="{{.ID}}">{{.Name}}</option>
+        <div x-data="{ showForm: false }">
+            <button @click="showForm = !showForm" class="contrast outline">
+                <span x-show="!showForm">+ Add Server</span>
+                <span x-show="showForm">Cancel</span>
+            </button>
+
+            <div x-show="showForm" x-transition>
+                <article>
+                    <form hx-post="/admin/servers" hx-swap="none">
+                        <h3>Basic Information</h3>
+                        <div class="grid">
+                            <label>
+                                Name *
+                                <input type="text" name="name" required placeholder="e.g., web-prod-01">
+                            </label>
+                            <label>
+                                Hostname *
+                                <input type="text" name="hostname" required placeholder="e.g., 192.168.1.100">
+                            </label>
+                        </div>
+                        <div class="grid">
+                            <label>
+                                Username *
+                                <input type="text" name="username" required placeholder="e.g., deploy">
+                            </label>
+                            <label>
+                                Port
+                                <input type="number" name="port" value="22">
+                            </label>
+                        </div>
+                        <div class="grid">
+                            <label>
+                                Environment
+                                <select name="environment_id">
+                                    <option value="">-- None --</option>
+                                    {{range .Environments}}
+                                    <option value="{{.ID}}">{{.Name}}</option>
+                                    {{end}}
+                                </select>
+                            </label>
+                            <label>
+                                OS Type
+                                <select name="os_type">
+                                    <option value="linux">Linux</option>
+                                    <option value="windows">Windows</option>
+                                    <option value="macos">macOS</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <h3>Authentication</h3>
+                        <div x-data="{ authType: 'password' }">
+                            <label>
+                                Auth Type
+                                <select name="auth_type" x-model="authType">
+                                    <option value="password">Password</option>
+                                    <option value="key">SSH Key</option>
+                                </select>
+                            </label>
+
+                            <div x-show="authType === 'password'">
+                                <label>
+                                    Password
+                                    <input type="password" name="password" placeholder="SSH password">
+                                </label>
+                            </div>
+
+                            <div x-show="authType === 'key'">
+                                <label>
+                                    Private Key
+                                    <textarea name="private_key" rows="4" placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"></textarea>
+                                </label>
+                                <label>
+                                    Passphrase (optional)
+                                    <input type="password" name="passphrase">
+                                </label>
+                            </div>
+                        </div>
+
+                        <h3>Additional Info</h3>
+                        <label>
+                            Description
+                            <textarea name="description" rows="2" placeholder="Server description"></textarea>
+                        </label>
+                        <label>
+                            Tags (comma-separated)
+                            <input type="text" name="tags" placeholder="e.g., web,production,critical">
+                        </label>
+                        <label>
+                            Notes
+                            <textarea name="notes" rows="2" placeholder="Additional notes"></textarea>
+                        </label>
+
+                        <button type="submit">Create Server</button>
+                    </form>
+                </article>
+            </div>
+        </div>
+
+        <h2>Servers</h2>
+        <div id="servers-list">
+            {{if .Servers}}
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Hostname</th>
+                        <th>Environment</th>
+                        <th>Auth</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Servers}}
+                    <tr id="server-{{.ID}}">
+                        <td>
+                            <strong>{{.Name}}</strong>
+                            {{if .Description}}<br><small>{{.Description}}</small>{{end}}
+                        </td>
+                        <td>{{.Username}}@{{.Hostname}}:{{.Port}}</td>
+                        <td>
+                            {{if .Environment}}
+                            <span style="padding: 2px 8px; background-color: {{.Environment.Color}}; color: white; border-radius: 4px; font-size: 0.8em;">
+                                {{.Environment.Name}}
+                            </span>
+                            {{else}}
+                            -
                             {{end}}
-                        </select>
-                    </label>
-                    <label>
-                        OS Type
-                        <select name="os_type">
-                            <option value="linux">Linux</option>
-                            <option value="windows">Windows</option>
-                            <option value="macos">macOS</option>
-                        </select>
-                    </label>
-                </div>
-
-                <h3>Authentication</h3>
-                <div x-data="{ authType: 'password' }">
-                    <label>
-                        Auth Type
-                        <select name="auth_type" x-model="authType">
-                            <option value="password">Password</option>
-                            <option value="key">SSH Key</option>
-                        </select>
-                    </label>
-
-                    <div x-show="authType === 'password'">
-                        <label>
-                            Password
-                            <input type="password" name="password" placeholder="SSH password">
-                        </label>
-                    </div>
-
-                    <div x-show="authType === 'key'">
-                        <label>
-                            Private Key
-                            <textarea name="private_key" rows="4" placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"></textarea>
-                        </label>
-                        <label>
-                            Passphrase (optional)
-                            <input type="password" name="passphrase">
-                        </label>
-                    </div>
-                </div>
-
-                <h3>Additional Info</h3>
-                <label>
-                    Description
-                    <textarea name="description" rows="2" placeholder="Server description"></textarea>
-                </label>
-                <label>
-                    Tags (comma-separated)
-                    <input type="text" name="tags" placeholder="e.g., web,production,critical">
-                </label>
-                <label>
-                    Notes
-                    <textarea name="notes" rows="2" placeholder="Additional notes"></textarea>
-                </label>
-
-                <button type="submit">Create Server</button>
-            </form>
-        </article>
-    </div>
-</div>
-
-<h2>Servers</h2>
-<div id="servers-list">
-    {{if .Servers}}
-    <table role="grid">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Hostname</th>
-                <th>Environment</th>
-                <th>Auth</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range .Servers}}
-            <tr id="server-{{.ID}}">
-                <td>
-                    <strong>{{.Name}}</strong>
-                    {{if .Description}}<br><small>{{.Description}}</small>{{end}}
-                </td>
-                <td>{{.Username}}@{{.Hostname}}:{{.Port}}</td>
-                <td>
-                    {{if .Environment}}
-                    <span style="padding: 2px 8px; background-color: {{.Environment.Color}}; color: white; border-radius: 4px; font-size: 0.8em;">
-                        {{.Environment.Name}}
-                    </span>
-                    {{else}}
-                    -
+                        </td>
+                        <td>{{.AuthType}}</td>
+                        <td>
+                            <button class="outline" hx-delete="/admin/servers?id={{.ID}}" hx-target="#server-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this server?">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
                     {{end}}
-                </td>
-                <td>{{.AuthType}}</td>
-                <td>
-                    <button class="outline" hx-delete="/admin/servers?id={{.ID}}" hx-target="#server-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this server?">
-                        Delete
-                    </button>
-                </td>
-            </tr>
+                </tbody>
+            </table>
+            {{else}}
+            <p>No servers yet. Click "+ Add Server" above to add your first server.</p>
             {{end}}
-        </tbody>
-    </table>
-    {{else}}
-    <p>No servers yet. <a href="#" @click="$dispatch('click')">Add your first server</a>.</p>
-    {{end}}
-</div>
-{{end}}
+        </div>
+    </main>
+
+    <footer class="container">
+        <small>Server Access Manager | Built with Go</small>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

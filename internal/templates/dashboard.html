@@ -1,70 +1,102 @@
-{{define "content"}}
-<h1>Dashboard</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Server Access Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>🖥️ Server Access Manager</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/topology">Topology</a></li>
+                <li>
+                    <details class="dropdown">
+                        <summary>{{.User.Username}}</summary>
+                        <dir>
+                            <ul>
+                                <li><a href="/admin/environments">Environments</a></li>
+                                <li><a href="/admin/servers">Servers</a></li>
+                                <li><a href="/admin/credentials">Credentials</a></li>
+                                <li><a href="/admin/logs">Logs</a></li>
+                                <li><a href="/logout" onclick="event.preventDefault(); fetch('/logout', {method: 'POST'}).then(() => window.location.href='/login')">Logout</a></li>
+                            </ul>
+                        </dir>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+    </header>
 
-<div class="grid">
-    <article>
-        <header>Environments</header>
-        <p style="font-size: 2em; font-weight: bold;">{{len .Environments}}</p>
-        <footer>
-            <a href="/admin/environments" class="secondary">Manage →</a>
-        </footer>
-    </article>
+    <main class="container">
+        <h1>Dashboard</h1>
 
-    <article>
-        <header>Servers</header>
-        <p style="font-size: 2em; font-weight: bold;">{{len .Servers}}</p>
-        <footer>
-            <a href="/admin/servers" class="secondary">Manage →</a>
-        </footer>
-    </article>
+        <div class="grid">
+            <article>
+                <header>Environments</header>
+                <p style="font-size: 2em; font-weight: bold;">{{len .Environments}}</p>
+                <footer>
+                    <a href="/admin/environments" class="secondary">Manage →</a>
+                </footer>
+            </article>
 
-    <article>
-        <header>Quick Actions</header>
-        <ul>
-            <li><a href="/admin/servers">Add Server</a></li>
-            <li><a href="/admin/environments">Add Environment</a></li>
-            <li><a href="/topology">View Topology</a></li>
-        </ul>
-    </article>
-</div>
+            <article>
+                <header>Servers</header>
+                <p style="font-size: 2em; font-weight: bold;">{{len .Servers}}</p>
+                <footer>
+                    <a href="/admin/servers" class="secondary">Manage →</a>
+                </footer>
+            </article>
 
-<h2>Recent Servers</h2>
-{{if .Servers}}
-<table role="grid">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Hostname</th>
-            <th>Environment</th>
-            <th>OS</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{range .Servers}}
-        <tr>
-            <td>{{.Name}}</td>
-            <td>{{.Hostname}}</td>
-            <td>{{if .Environment}}{{.Environment.Name}}{{else}}-{{end}}</td>
-            <td>{{.OSType}}</td>
-            <td>
-                <button class="outline" hx-get="/admin/servers/{{.ID}}/edit" hx-target="#modal-content" hx-swap="innerHTML">Edit</button>
-            </td>
-        </tr>
+            <article>
+                <header>Quick Actions</header>
+                <ul>
+                    <li><a href="/admin/servers">Add Server</a></li>
+                    <li><a href="/admin/environments">Add Environment</a></li>
+                    <li><a href="/topology">View Topology</a></li>
+                </ul>
+            </article>
+        </div>
+
+        <h2>Recent Servers</h2>
+        {{if .Servers}}
+        <table role="grid">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Hostname</th>
+                    <th>Environment</th>
+                    <th>OS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Servers}}
+                <tr>
+                    <td>{{.Name}}</td>
+                    <td>{{.Hostname}}</td>
+                    <td>{{if .Environment}}{{.Environment.Name}}{{else}}-{{end}}</td>
+                    <td>{{.OSType}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p>No servers yet. <a href="/admin/servers">Add your first server</a>.</p>
         {{end}}
-    </tbody>
-</table>
-{{else}}
-<p>No servers yet. <a href="/admin/servers">Add your first server</a>.</p>
-{{end}}
+    </main>
 
-<div id="modal" class="modal" style="display:none;">
-    <article>
-        <header>
-            <button aria-label="Close" rel="prev" onclick="document.getElementById('modal').style.display='none'"></button>
-            <h3>Edit Server</h3>
-        </header>
-        <div id="modal-content"></div>
-    </article>
-</div>
-{{end}}
+    <footer class="container">
+        <small>Server Access Manager | Built with Go</small>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

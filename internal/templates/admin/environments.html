@@ -1,72 +1,118 @@
-{{define "content"}}
-<h1>Environment Management</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environments - Server Access Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>🖥️ Server Access Manager</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/topology">Topology</a></li>
+                <li>
+                    <details class="dropdown">
+                        <summary>{{.User.Username}}</summary>
+                        <dir>
+                            <ul>
+                                <li><a href="/admin/environments">Environments</a></li>
+                                <li><a href="/admin/servers">Servers</a></li>
+                                <li><a href="/admin/credentials">Credentials</a></li>
+                                <li><a href="/admin/logs">Logs</a></li>
+                                <li><a href="/logout" onclick="event.preventDefault(); fetch('/logout', {method: 'POST'}).then(() => window.location.href='/login')">Logout</a></li>
+                            </ul>
+                        </dir>
+                    </details>
+                </li>
+            </ul>
+        </nav>
+    </header>
 
-<div x-data="{ showForm: false }">
-    <button @click="showForm = !showForm" class="contrast">
-        <span x-show="!showForm">+ Add Environment</span>
-        <span x-show="showForm">Cancel</span>
-    </button>
+    <main class="container">
+        <h1>Environment Management</h1>
 
-    <div x-show="showForm" x-transition>
-        <article>
-            <form hx-post="/admin/environments" hx-target="#environments-list" hx-swap="outerHTML">
-                <div class="grid">
-                    <label>
-                        Name
-                        <input type="text" name="name" required placeholder="e.g., production">
-                    </label>
-                    <label>
-                        Color
-                        <input type="color" name="color" value="#6b7280">
-                    </label>
-                </div>
-                <label>
-                    Description
-                    <textarea name="description" rows="2" placeholder="Environment description"></textarea>
-                </label>
-                <label>
-                    Display Order
-                    <input type="number" name="display_order" value="0">
-                </label>
-                <button type="submit">Create Environment</button>
-            </form>
-        </article>
-    </div>
-</div>
+        <div x-data="{ showForm: false }">
+            <button @click="showForm = !showForm" class="contrast outline">
+                <span x-show="!showForm">+ Add Environment</span>
+                <span x-show="showForm">Cancel</span>
+            </button>
 
-<h2>Environments</h2>
-<div id="environments-list">
-    {{if .Environments}}
-    <table role="grid">
-        <thead>
-            <tr>
-                <th>Color</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Order</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range .Environments}}
-            <tr id="env-{{.ID}}">
-                <td>
-                    <span style="display: inline-block; width: 20px; height: 20px; background-color: {{.Color}}; border-radius: 4px;"></span>
-                </td>
-                <td>{{.Name}}</td>
-                <td>{{.Description}}</td>
-                <td>{{.DisplayOrder}}</td>
-                <td>
-                    <button class="outline" hx-delete="/admin/environments?id={{.ID}}" hx-target="#env-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this environment?">
-                        Delete
-                    </button>
-                </td>
-            </tr>
+            <div x-show="showForm" x-transition>
+                <article>
+                    <form hx-post="/admin/environments" hx-swap="none">
+                        <div class="grid">
+                            <label>
+                                Name
+                                <input type="text" name="name" required placeholder="e.g., production">
+                            </label>
+                            <label>
+                                Color
+                                <input type="color" name="color" value="#6b7280">
+                            </label>
+                        </div>
+                        <label>
+                            Description
+                            <textarea name="description" rows="2" placeholder="Environment description"></textarea>
+                        </label>
+                        <label>
+                            Display Order
+                            <input type="number" name="display_order" value="0">
+                        </label>
+                        <button type="submit">Create Environment</button>
+                    </form>
+                </article>
+            </div>
+        </div>
+
+        <h2>Environments</h2>
+        <div id="environments-list">
+            {{if .Environments}}
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th>Color</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Order</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Environments}}
+                    <tr id="env-{{.ID}}">
+                        <td>
+                            <span style="display: inline-block; width: 20px; height: 20px; background-color: {{.Color}}; border-radius: 4px;"></span>
+                        </td>
+                        <td>{{.Name}}</td>
+                        <td>{{.Description}}</td>
+                        <td>{{.DisplayOrder}}</td>
+                        <td>
+                            <button class="outline" hx-delete="/admin/environments?id={{.ID}}" hx-target="#env-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this environment?">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <p>No environments yet.</p>
             {{end}}
-        </tbody>
-    </table>
-    {{else}}
-    <p>No environments yet.</p>
-    {{end}}
-</div>
-{{end}}
+        </div>
+    </main>
+
+    <footer class="container">
+        <small>Server Access Manager | Built with Go</small>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
