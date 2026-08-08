@@ -50,7 +50,8 @@ function renderTopology(data) {
                 username: node.username,
                 hostname: node.hostname,
                 port: node.port,
-                password: node.password
+                password: node.password,
+                displayLabel: node.name + '\n' + node.hostname
             }
         });
     });
@@ -81,15 +82,17 @@ function renderTopology(data) {
                     'background-fit': 'contain',
                     'background-clip': 'node',
                     'background-padding': '4px',
-                    'label': 'data(name)',
+                    'label': 'data(displayLabel)',
                     'color': '#fff',
                     'text-valign': 'bottom',
                     'text-halign': 'center',
                     'width': '70px',
                     'height': '80px',
-                    'font-size': '11px',
+                    'font-size': '10px',
                     'font-weight': 'bold',
                     'text-margin-y': '8px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '80px',
                     'border-width': '3px',
                     'border-color': '#1c5d90',
                     'border-opacity': '1',
@@ -160,9 +163,6 @@ function renderTopology(data) {
             showNodeDetails(data);
         }
     });
-
-    // Auto-refresh every 30 seconds
-    setTimeout(loadTopology, 30000);
 }
 
 function showNodeDetails(data) {
