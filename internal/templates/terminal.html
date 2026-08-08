@@ -63,7 +63,7 @@
         document.getElementById('server-name').textContent = serverName;
 
         // Initialize terminal
-        const term = new Terminal({
+        const term = new window.Terminal({
             cursorBlink: true,
             fontSize: 14,
             fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -76,8 +76,8 @@
             }
         });
 
-        const fitAddon = new FitAddon.FitAddon();
-        const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+        const fitAddon = new window.FitAddon.FitAddon();
+        const webLinksAddon = new window.WebLinksAddon.WebLinksAddon();
 
         term.loadAddon(fitAddon);
         term.loadAddon(webLinksAddon);
