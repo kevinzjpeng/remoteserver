@@ -52,7 +52,8 @@ function renderTopology(data) {
                 hostname: node.hostname,
                 port: node.port,
                 password: node.password,
-                displayLabel: node.name + '\n' + connectionInfo
+                displayName: node.name,
+                displayInfo: connectionInfo
             }
         });
     });
@@ -83,16 +84,16 @@ function renderTopology(data) {
                     'background-fit': 'contain',
                     'background-clip': 'node',
                     'background-padding': '4px',
-                    'label': 'data(displayLabel)',
+                    'label': 'data(displayName)',
+                    'content': 'data(displayInfo)',
                     'color': '#fff',
                     'text-valign': 'bottom',
                     'text-halign': 'center',
                     'width': '70px',
                     'height': '80px',
-                    'font-size': '9px',
-                    'text-margin-y': '12px',
-                    'text-wrap': 'wrap',
-                    'text-max-width': '80px',
+                    'font-size': '11px',
+                    'font-weight': 'bold',
+                    'text-margin-y': '18px',
                     'border-width': '3px',
                     'border-color': '#1c5d90',
                     'border-opacity': '1',
@@ -101,6 +102,20 @@ function renderTopology(data) {
                     'shadow-opacity': '0.3',
                     'shadow-offset-x': '2',
                     'shadow-offset-y': '2'
+                }
+            },
+            {
+                selector: 'node[parent^="group-"]',
+                style: {
+                    'content': 'data(displayInfo)',
+                    'color': '#aaa',
+                    'font-size': '6px',
+                    'font-weight': 'normal',
+                    'text-valign': 'bottom',
+                    'text-halign': 'center',
+                    'text-margin-y': '30px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '80px'
                 }
             },
             {
