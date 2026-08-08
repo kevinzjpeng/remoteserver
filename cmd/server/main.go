@@ -68,6 +68,9 @@ func main() {
 	r.Use(appmiddleware.Logging)
 	r.Use(appmiddleware.Recovery)
 
+	// WebSocket endpoint for terminal (must be after middleware)
+	r.Get("/ws/terminal", terminalHandler.Terminal)
+
 	// Serve static files
 	fileServer := http.FileServer(http.Dir("static"))
 	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
@@ -86,9 +89,6 @@ func main() {
 	r.Get("/terminal", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "internal/templates/terminal.html")
 	})
-
-	// WebSocket endpoint for terminal
-	r.Get("/ws/terminal", terminalHandler.Terminal)
 
 	// Public API endpoints
 	r.Get("/api/topology", topoHandler.GetTopology)
