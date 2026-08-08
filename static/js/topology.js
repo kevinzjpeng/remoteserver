@@ -75,14 +75,24 @@ function renderTopology(data) {
             {
                 selector: 'node[parent^="group-"]',
                 style: {
-                    'background-color': '#666',
+                    'shape': 'rectangle',
+                    'background-color': '#4a90e2',
+                    'background-image': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiA0QzIgMi44OTU0MyAyLjg5NTQzIDIgNCAySDIwQzIxLjEwNDYgMiAyMiAyLjg5NTQzIDIyIDRWMjBDMjIgMjEuMTA0NiAyMS4xMDQ2IDIyIDIwIDIySDRDMi44OTU0MyAyMiAyIDIxLjEwNDYgMiAyMFY0Wk00IDRWMjBIMjBWNEg0Wk02IDdIOFY5SDZWMTFIOEgxMFYxM0g2VjE1SDhWMTdINlYxOEg4VjIwSDEwVjE4SDEyVjIwSDE0VjE4SDE2VjIwSDE4VjE4SDIwVjE2SDE4VjE0SDIwVjEySDE4VjEwSDE2VjhIMTRWMTBIMTJWOFYxMEgxMFY4SDhWMTBWN0g2WiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=',
+                    'background-fit': 'contain',
+                    'background-clip': 'node',
+                    'background-padding': '8px',
                     'label': 'data(name)',
                     'color': '#fff',
-                    'text-valign': 'center',
+                    'text-valign': 'bottom',
                     'text-halign': 'center',
-                    'width': '40px',
-                    'height': '40px',
-                    'font-size': '10px'
+                    'width': '60px',
+                    'height': '70px',
+                    'font-size': '11px',
+                    'font-weight': 'bold',
+                    'text-margin-y': '5px',
+                    'border-width': '2px',
+                    'border-color': '#2c5f8d',
+                    'border-opacity': '0.8'
                 }
             },
             {
