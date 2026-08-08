@@ -92,7 +92,7 @@ function renderTopology(data) {
                     'height': '80px',
                     'font-size': '12px',
                     'font-weight': 'bold',
-                    'text-margin-y': '20px',
+                    'text-margin-y': '15px',
                     'border-width': '3px',
                     'border-color': '#1c5d90',
                     'border-opacity': '1',
@@ -191,7 +191,7 @@ function renderTopology(data) {
                 label.style.cssText = `
                     position: absolute;
                     left: ${pos.x * zoom + pan.x}px;
-                    top: ${(pos.y + 70) * zoom + pan.y}px;
+                    top: ${(pos.y + 60) * zoom + pan.y}px;
                     transform: translateX(-50%);
                     font-size: ${5.6 * zoom}px;
                     color: #4a90e2;
