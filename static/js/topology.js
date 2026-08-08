@@ -146,20 +146,24 @@ function renderTopology(data) {
         // Remove existing labels
         document.querySelectorAll('.connection-label').forEach(el => el.remove());
 
+        // Get current zoom and pan
+        const zoom = cy.zoom();
+        const pan = cy.pan();
+
         // Add new labels for each server node
         cy.nodes('[parent^="group-"]').forEach(node => {
             const data = node.data();
             if (data.displayInfo) {
-                const pos = node.renderedPosition();
+                const pos = node.position();
                 const label = document.createElement('div');
                 label.className = 'connection-label';
                 label.textContent = data.displayInfo;
                 label.style.cssText = `
                     position: absolute;
-                    left: ${pos.x}px;
-                    top: ${pos.y + 95}px;
+                    left: ${pos.x * zoom + pan.x}px;
+                    top: ${(pos.y + 95) * zoom + pan.y}px;
                     transform: translateX(-50%);
-                    font-size: 8px;
+                    font-size: ${8 * zoom}px;
                     color: #aaa;
                     text-align: center;
                     pointer-events: none;
@@ -173,6 +177,7 @@ function renderTopology(data) {
 
     // Update labels on initial render and when layout changes
     cy.on('render', updateConnectionLabels);
+    cy.on('zoom pan', updateConnectionLabels);
     updateConnectionLabels();
 
     // Add click handlers
