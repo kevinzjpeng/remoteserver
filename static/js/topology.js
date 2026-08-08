@@ -216,18 +216,10 @@ function renderTopology(data) {
         const node = evt.target;
         const data = node.data();
 
-        // If the node has connection details, open SSH terminal
+        // If the node has connection details, open web terminal
         if (data.username && data.hostname) {
-            let sshUrl = `ssh://`;
-            sshUrl += encodeURIComponent(data.username);
-            if (data.password) {
-                sshUrl += `:${encodeURIComponent(data.password)}`;
-            }
-            sshUrl += `@${data.hostname}`;
-            if (data.port && data.port !== 22) {
-                sshUrl += `:${data.port}`;
-            }
-            window.open(sshUrl, '_blank');
+            const terminalUrl = `/terminal?server_id=${data.id.replace('node-', '')}&server_name=${encodeURIComponent(data.name)}`;
+            window.open(terminalUrl, '_blank');
         } else {
             // Otherwise show details
             showNodeDetails(data);

@@ -57,6 +57,7 @@ func main() {
 	credHandler := handlers.NewCredentialHandler(credRepo)
 	topoHandler := handlers.NewTopologyHandler(serverRepo, envRepo)
 	logHandler := handlers.NewLogHandler(logRepo)
+	terminalHandler := handlers.NewTerminalHandler(serverRepo)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -80,6 +81,14 @@ func main() {
 	r.Get("/topology", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "internal/templates/topology.html")
 	})
+
+	// Serve terminal HTML page
+	r.Get("/terminal", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "internal/templates/terminal.html")
+	})
+
+	// WebSocket endpoint for terminal
+	r.Get("/ws/terminal", terminalHandler.Terminal)
 
 	// Public API endpoints
 	r.Get("/api/topology", topoHandler.GetTopology)
