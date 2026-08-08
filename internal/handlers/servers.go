@@ -120,18 +120,44 @@ func (h *ServerHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get existing server to preserve credentials if not updated
+	existingServer, err := h.servers.GetByID(id)
+	if err != nil {
+		http.Error(w, "Server not found", http.StatusNotFound)
+		return
+	}
+
 	server := &models.Server{
 		ID:          id,
 		Name:        r.FormValue("name"),
 		Hostname:    r.FormValue("hostname"),
 		Username:    r.FormValue("username"),
 		AuthType:    r.FormValue("auth_type"),
-		Password:    r.FormValue("password"),
-		PrivateKey:  r.FormValue("private_key"),
-		Passphrase:  r.FormValue("passphrase"),
 		Description: r.FormValue("description"),
 		OSType:      r.FormValue("os_type"),
 		Notes:       r.FormValue("notes"),
+	}
+
+	// Only update credentials if provided, otherwise keep existing
+	if password := r.FormValue("password"); password != "" {
+		server.Password = password
+	} else {
+		// Get existing password
+		server.Password, _ = h.servers.GetPassword(id)
+	}
+
+	if privateKey := r.FormValue("private_key"); privateKey != "" {
+		server.PrivateKey = privateKey
+	} else {
+		// Get existing private key
+		server.PrivateKey, _ = h.servers.GetPrivateKey(id)
+	}
+
+	if passphrase := r.FormValue("passphrase"); passphrase != "" {
+		server.Passphrase = passphrase
+	} else if existingServer != nil {
+		// Keep existing passphrase (we don't have a getter for this, so we'll handle it in the repo)
+		server.Passphrase = existingServer.Passphrase
 	}
 
 	if portStr := r.FormValue("port"); portStr != "" {
