@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"server-access-manager/internal/repository"
 )
@@ -88,7 +89,7 @@ func (h *TopologyHandler) GetTopology(w http.ResponseWriter, r *http.Request) {
 		}
 
 		node := TopologyNode{
-			ID:          string(rune(server.ID)),
+			ID:          strconv.FormatInt(server.ID, 10),
 			Name:        server.Name,
 			Environment: envName,
 			Type:        server.OSType,
@@ -119,7 +120,7 @@ func (h *TopologyHandler) GetTopology(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if group, ok := groupMap[envName]; ok {
-			group.NodeIDs = append(group.NodeIDs, string(rune(server.ID)))
+			group.NodeIDs = append(group.NodeIDs, strconv.FormatInt(server.ID, 10))
 		}
 	}
 
