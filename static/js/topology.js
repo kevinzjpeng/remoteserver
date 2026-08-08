@@ -106,12 +106,19 @@ function renderTopology(data) {
             {
                 selector: 'node[^parent]',
                 style: {
-                    'background-color': '#999',
+                    'background-color': '#f0f0f0',
                     'label': 'data(name)',
-                    'color': '#fff',
+                    'color': '#333',
                     'text-valign': 'center',
                     'text-halign': 'center',
-                    'font-size': '12px',
+                    'font-size': '14px',
+                    'font-weight': 'bold',
+                    'padding': '30px',
+                    'border-width': '2px',
+                    'border-color': '#ccc',
+                    'border-style': 'dashed'
+                }
+            },
                     'font-weight': 'bold',
                     'text-opacity': 0.7
                 }
@@ -190,7 +197,7 @@ function renderTopology(data) {
                     left: ${pos.x * zoom + pan.x}px;
                     top: ${(pos.y + 70) * zoom + pan.y}px;
                     transform: translateX(-50%);
-                    font-size: ${8 * zoom}px;
+                    font-size: ${5.6 * zoom}px;
                     color: #4a90e2;
                     text-align: center;
                     pointer-events: none;
