@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SSH Terminal - Server Access Manager</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.3.0/css/xterm.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
     <style>
         body {
             margin: 0;
@@ -52,9 +55,6 @@
     <div id="status" class="status-connected">Connected</div>
     <div id="terminal-container"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.3.0/lib/xterm.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.8.0/lib/addon-fit.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.9.0/lib/addon-web-links.min.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const serverId = urlParams.get('server_id');
@@ -63,7 +63,7 @@
         document.getElementById('server-name').textContent = serverName;
 
         // Initialize terminal
-        const term = new window.Terminal({
+        const term = new Terminal({
             cursorBlink: true,
             fontSize: 14,
             fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -76,8 +76,8 @@
             }
         });
 
-        const fitAddon = new window.FitAddon.FitAddon();
-        const webLinksAddon = new window.WebLinksAddon.WebLinksAddon();
+        const fitAddon = new FitAddon.FitAddon();
+        const webLinksAddon = new WebLinksAddon.WebLinksAddon();
 
         term.loadAddon(fitAddon);
         term.loadAddon(webLinksAddon);
