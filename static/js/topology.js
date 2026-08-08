@@ -40,6 +40,7 @@ function renderTopology(data) {
 
     // Add server nodes
     nodes.forEach(node => {
+        const displayLabel = node.name + '\n' + node.username + '@' + node.hostname + (node.port && node.port !== 22 ? ':' + node.port : '');
         elements.push({
             data: {
                 id: 'node-' + node.id,
@@ -51,7 +52,7 @@ function renderTopology(data) {
                 hostname: node.hostname,
                 port: node.port,
                 password: node.password,
-                displayLabel: node.name + '\n' + node.hostname
+                displayLabel: displayLabel
             }
         });
     });
@@ -88,7 +89,7 @@ function renderTopology(data) {
                     'text-halign': 'center',
                     'width': '70px',
                     'height': '80px',
-                    'font-size': '10px',
+                    'font-size': '8px',
                     'font-weight': 'bold',
                     'text-margin-y': '8px',
                     'text-wrap': 'wrap',
