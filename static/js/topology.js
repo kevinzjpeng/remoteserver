@@ -157,7 +157,7 @@ function renderTopology(data) {
                 label.style.cssText = `
                     position: absolute;
                     left: ${pos.x}px;
-                    top: ${pos.y + 50}px;
+                    top: ${pos.y + 70}px;
                     transform: translateX(-50%);
                     font-size: 8px;
                     color: #aaa;
