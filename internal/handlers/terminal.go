@@ -44,6 +44,8 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Terminal connection attempt: server=%s, auth_type=%s, username=%s", server.Name, server.AuthType, server.Username)
+
 	// Get password if auth type is password
 	var password string
 	if server.AuthType == "password" {
@@ -53,6 +55,7 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to get credentials", http.StatusInternalServerError)
 			return
 		}
+		log.Printf("Password retrieved, length=%d", len(password))
 	}
 
 	// Get private key if auth type is key
@@ -64,6 +67,7 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to get credentials", http.StatusInternalServerError)
 			return
 		}
+		log.Printf("Private key retrieved, length=%d", len(privateKey))
 	}
 
 	// Upgrade to WebSocket

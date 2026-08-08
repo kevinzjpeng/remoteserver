@@ -56,6 +56,21 @@
             </div>
 
             <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Password</label>
+                <input type="password" name="password" placeholder="Leave blank to keep current password" style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Private Key</label>
+                <textarea name="private_key" rows="4" placeholder="Leave blank to keep current key" style="width: 100%;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Passphrase (optional)</label>
+                <input type="password" name="passphrase" placeholder="Leave blank to keep current passphrase" style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
                 <textarea name="description" rows="2" style="width: 100%;">{{.Server.Description}}</textarea>
             </div>
