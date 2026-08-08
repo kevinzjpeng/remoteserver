@@ -119,10 +119,6 @@ function renderTopology(data) {
                     'border-style': 'dashed'
                 }
             },
-                    'font-weight': 'bold',
-                    'text-opacity': 0.7
-                }
-            },
             {
                 selector: 'edge',
                 style: {
