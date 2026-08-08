@@ -145,10 +145,37 @@ function renderTopology(data) {
     function updateConnectionLabels() {
         // Remove existing labels
         document.querySelectorAll('.connection-label').forEach(el => el.remove());
+        document.querySelectorAll('.group-label').forEach(el => el.remove());
 
         // Get current zoom and pan
         const zoom = cy.zoom();
         const pan = cy.pan();
+
+        // Add group labels (environment names)
+        cy.nodes('[^parent]').forEach(node => {
+            const data = node.data();
+            if (data.name) {
+                const pos = node.position();
+                const bounds = node.renderedBoundingBox();
+                const label = document.createElement('div');
+                label.className = 'group-label';
+                label.textContent = data.name;
+                label.style.cssText = `
+                    position: absolute;
+                    left: ${bounds.x1 + (bounds.w / 2)}px;
+                    top: ${bounds.y1 - 15}px;
+                    transform: translateX(-50%);
+                    font-size: ${14 * zoom}px;
+                    color: #333;
+                    text-align: center;
+                    pointer-events: none;
+                    white-space: nowrap;
+                    z-index: 10;
+                    font-weight: bold;
+                `;
+                container.appendChild(label);
+            }
+        });
 
         // Add new labels for each server node
         cy.nodes('[parent^="group-"]').forEach(node => {
