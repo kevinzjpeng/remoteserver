@@ -161,14 +161,15 @@ function renderTopology(data) {
                 label.style.cssText = `
                     position: absolute;
                     left: ${pos.x * zoom + pan.x}px;
-                    top: ${(pos.y + 95) * zoom + pan.y}px;
+                    top: ${(pos.y + 70) * zoom + pan.y}px;
                     transform: translateX(-50%);
                     font-size: ${8 * zoom}px;
-                    color: #aaa;
+                    color: #4a90e2;
                     text-align: center;
                     pointer-events: none;
                     white-space: nowrap;
                     z-index: 10;
+                    font-weight: 500;
                 `;
                 container.appendChild(label);
             }
