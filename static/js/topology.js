@@ -136,7 +136,7 @@ function renderTopology(data) {
             nodeOverlap: 20,
             refresh: 20,
             fit: true,
-            animate: true,
+            animate: false,
             animationDuration: 500
         }
     });
@@ -157,7 +157,7 @@ function renderTopology(data) {
                 label.style.cssText = `
                     position: absolute;
                     left: ${pos.x}px;
-                    top: ${pos.y + 70}px;
+                    top: ${pos.y + 95}px;
                     transform: translateX(-50%);
                     font-size: 8px;
                     color: #aaa;
