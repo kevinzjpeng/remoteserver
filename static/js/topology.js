@@ -85,7 +85,7 @@ function renderTopology(data) {
                     'background-clip': 'node',
                     'background-padding': '4px',
                     'label': 'data(displayName)',
-                    'color': '#fff',
+                    'color': '#000',
                     'text-valign': 'bottom',
                     'text-halign': 'center',
                     'width': '70px',
