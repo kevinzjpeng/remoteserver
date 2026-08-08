@@ -52,7 +52,8 @@ function renderTopology(data) {
                 hostname: node.hostname,
                 port: node.port,
                 password: node.password,
-                displayLabel: node.name + '\n' + connectionInfo
+                displayName: node.name,
+                displayInfo: connectionInfo
             }
         });
     });
@@ -83,17 +84,15 @@ function renderTopology(data) {
                     'background-fit': 'contain',
                     'background-clip': 'node',
                     'background-padding': '4px',
-                    'label': 'data(displayLabel)',
+                    'label': 'data(displayName)',
                     'color': '#fff',
                     'text-valign': 'bottom',
                     'text-halign': 'center',
                     'width': '70px',
                     'height': '80px',
-                    'font-size': '10px',
+                    'font-size': '12px',
                     'font-weight': 'bold',
-                    'text-margin-y': '15px',
-                    'text-wrap': 'wrap',
-                    'text-max-width': '80px',
+                    'text-margin-y': '20px',
                     'border-width': '3px',
                     'border-color': '#1c5d90',
                     'border-opacity': '1',
@@ -141,6 +140,40 @@ function renderTopology(data) {
             animationDuration: 500
         }
     });
+
+    // Create HTML overlays for connection info (smaller font)
+    function updateConnectionLabels() {
+        // Remove existing labels
+        document.querySelectorAll('.connection-label').forEach(el => el.remove());
+
+        // Add new labels for each server node
+        cy.nodes('[parent^="group-"]').forEach(node => {
+            const data = node.data();
+            if (data.displayInfo) {
+                const pos = node.renderedPosition();
+                const label = document.createElement('div');
+                label.className = 'connection-label';
+                label.textContent = data.displayInfo;
+                label.style.cssText = `
+                    position: absolute;
+                    left: ${pos.x}px;
+                    top: ${pos.y + 50}px;
+                    transform: translateX(-50%);
+                    font-size: 8px;
+                    color: #aaa;
+                    text-align: center;
+                    pointer-events: none;
+                    white-space: nowrap;
+                    z-index: 10;
+                `;
+                container.appendChild(label);
+            }
+        });
+    }
+
+    // Update labels on initial render and when layout changes
+    cy.on('render', updateConnectionLabels);
+    updateConnectionLabels();
 
     // Add click handlers
     cy.on('tap', 'node[parent^="group-"]', function(evt) {
