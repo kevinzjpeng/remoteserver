@@ -1,3 +1,5 @@
+mod config;
+
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
