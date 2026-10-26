@@ -1,6 +1,7 @@
 mod config;
 mod database;
 mod models;
+mod crypto;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
