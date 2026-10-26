@@ -1,6 +1,6 @@
 use axum::{
-    extract::{ConnectInfo, State},
-    http::StatusCode,
+    extract::State,
+    http::{Request, StatusCode},
     response::IntoResponse,
     Json,
 };
@@ -18,9 +18,17 @@ pub struct ConnectionConfig {
 
 pub async fn get_connection_config(
     state: State<AppState>,
-    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    request: Request<axum::body::Body>,
 ) -> impl IntoResponse {
-    let client_ip = addr.ip().to_string();
+    // Get client IP from X-Forwarded-For header or use a default
+    let client_ip = request
+        .headers()
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|h| h.split(',').next())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "127.0.0.1".to_string());
+
     let is_internal = is_internal_client(&client_ip);
 
     let resp = ConnectionConfig {

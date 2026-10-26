@@ -68,7 +68,7 @@ pub async fn callback(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let user_repo = UserRepository::new(&state.db);
+    let user_repo = UserRepository::new(state.db.clone());
 
     // Create or get user
     let user = match user_repo.get_by_github_id(&github_user.id.to_string()) {

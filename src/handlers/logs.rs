@@ -20,7 +20,7 @@ pub async fn list(
     Extension(session): Extension<SessionData>,
     Query(params): Query<LogParams>,
 ) -> Result<Html<String>, StatusCode> {
-    let log_repo = AccessLogRepository::new(&state.db);
+    let log_repo = AccessLogRepository::new(state.db.clone());
 
     let limit = params.limit.unwrap_or(100);
 

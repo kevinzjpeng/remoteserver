@@ -2,6 +2,7 @@ use crate::crypto::encryption;
 use crate::database::Database;
 use crate::models::Credential;
 use rusqlite::params;
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -14,13 +15,13 @@ pub enum CredentialRepoError {
     Encryption(String),
 }
 
-pub struct CredentialRepository<'a> {
-    db: &'a Database,
+pub struct CredentialRepository {
+    db: Arc<Database>,
     encryption_key: Vec<u8>,
 }
 
-impl<'a> CredentialRepository<'a> {
-    pub fn new(db: &'a Database, encryption_key: Vec<u8>) -> Self {
+impl CredentialRepository {
+    pub fn new(db: Arc<Database>, encryption_key: Vec<u8>) -> Self {
         Self { db, encryption_key }
     }
 
@@ -80,7 +81,7 @@ impl<'a> CredentialRepository<'a> {
 
     pub fn create(&self, cred: &Credential, credentials_data: &[u8]) -> Result<Credential, CredentialRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "INSERT INTO service_credentials (name, service_type, credentials_encrypted, config_json, is_active, created_at, updated_at)
@@ -101,7 +102,7 @@ impl<'a> CredentialRepository<'a> {
 
     pub fn update(&self, cred: &Credential, credentials_data: &[u8]) -> Result<(), CredentialRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "UPDATE service_credentials SET name = ?, service_type = ?, credentials_encrypted = ?,

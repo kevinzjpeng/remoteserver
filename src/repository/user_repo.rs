@@ -1,7 +1,7 @@
 use crate::database::Database;
 use crate::models::User;
-use chrono::NaiveDateTime;
 use rusqlite::params;
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -12,12 +12,12 @@ pub enum UserRepoError {
     NotFound,
 }
 
-pub struct UserRepository<'a> {
-    db: &'a Database,
+pub struct UserRepository {
+    db: Arc<Database>,
 }
 
-impl<'a> UserRepository<'a> {
-    pub fn new(db: &'a Database) -> Self {
+impl UserRepository {
+    pub fn new(db: Arc<Database>) -> Self {
         Self { db }
     }
 
@@ -80,7 +80,7 @@ impl<'a> UserRepository<'a> {
             .map_err(|e| UserRepoError::Database(e.to_string()))?;
         let is_admin = count == 0;
 
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "INSERT INTO users (github_id, username, email, avatar_url, is_admin, created_at, last_login)
@@ -97,7 +97,7 @@ impl<'a> UserRepository<'a> {
 
     pub fn update_last_login(&self, id: i64) -> Result<(), UserRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
         conn.execute(
             "UPDATE users SET last_login = ? WHERE id = ?",
             params![now, id],

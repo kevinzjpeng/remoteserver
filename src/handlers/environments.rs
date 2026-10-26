@@ -27,7 +27,7 @@ pub async fn list(
     state: State<AppState>,
     Extension(session): Extension<SessionData>,
 ) -> Result<Html<String>, StatusCode> {
-    let env_repo = EnvironmentRepository::new(&state.db);
+    let env_repo = EnvironmentRepository::new(state.db.clone());
 
     let environments = env_repo.get_all().map_err(|e| {
         tracing::error!("Failed to load environments: {}", e);
@@ -78,7 +78,7 @@ pub async fn create(
     state: State<AppState>,
     Form(form): Form<EnvironmentForm>,
 ) -> Result<Response, StatusCode> {
-    let env_repo = EnvironmentRepository::new(&state.db);
+    let env_repo = EnvironmentRepository::new(state.db.clone());
 
     let display_order = form
         .display_order
@@ -105,7 +105,7 @@ pub async fn update(
 ) -> Result<Response, StatusCode> {
     let id = params.id.parse::<i64>().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let env_repo = EnvironmentRepository::new(&state.db);
+    let env_repo = EnvironmentRepository::new(state.db.clone());
 
     let display_order = form
         .display_order
@@ -132,7 +132,7 @@ pub async fn delete(
 ) -> Result<Response, StatusCode> {
     let id = params.id.parse::<i64>().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let env_repo = EnvironmentRepository::new(&state.db);
+    let env_repo = EnvironmentRepository::new(state.db.clone());
 
     env_repo.delete(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

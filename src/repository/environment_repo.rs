@@ -1,6 +1,7 @@
 use crate::database::Database;
 use crate::models::Environment;
 use rusqlite::params;
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,12 +12,12 @@ pub enum EnvironmentRepoError {
     NotFound,
 }
 
-pub struct EnvironmentRepository<'a> {
-    db: &'a Database,
+pub struct EnvironmentRepository {
+    db: Arc<Database>,
 }
 
-impl<'a> EnvironmentRepository<'a> {
-    pub fn new(db: &'a Database) -> Self {
+impl EnvironmentRepository {
+    pub fn new(db: Arc<Database>) -> Self {
         Self { db }
     }
 
@@ -71,7 +72,7 @@ impl<'a> EnvironmentRepository<'a> {
         display_order: i32,
     ) -> Result<Environment, EnvironmentRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "INSERT INTO environments (name, description, color, display_order, created_at) VALUES (?, ?, ?, ?, ?)",

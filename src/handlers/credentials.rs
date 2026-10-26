@@ -28,7 +28,7 @@ pub async fn list(
     state: State<AppState>,
     Extension(session): Extension<SessionData>,
 ) -> Result<Html<String>, StatusCode> {
-    let cred_repo = CredentialRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let cred_repo = CredentialRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     let credentials = cred_repo.get_all().map_err(|e| {
         tracing::error!("Failed to load credentials: {}", e);
@@ -80,7 +80,7 @@ pub async fn create(
     state: State<AppState>,
     Form(form): Form<CredentialForm>,
 ) -> Result<Response, StatusCode> {
-    let cred_repo = CredentialRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let cred_repo = CredentialRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     let is_active = form.is_active.as_deref() == Some("on") || form.is_active.as_deref() == Some("true");
 
@@ -91,8 +91,8 @@ pub async fn create(
         credentials_encrypted: None,
         config_json: form.config_json,
         is_active,
-        created_at: chrono::Utc::now().naive_utc(),
-        updated_at: chrono::Utc::now().naive_utc(),
+        created_at: chrono::Utc::now().to_rfc3339(),
+        updated_at: chrono::Utc::now().to_rfc3339(),
     };
 
     let credentials_data = form
@@ -115,7 +115,7 @@ pub async fn update(
 ) -> Result<Response, StatusCode> {
     let id = params.id.parse::<i64>().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let cred_repo = CredentialRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let cred_repo = CredentialRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     let is_active = form.is_active.as_deref() == Some("on") || form.is_active.as_deref() == Some("true");
 
@@ -126,8 +126,8 @@ pub async fn update(
         credentials_encrypted: None,
         config_json: form.config_json,
         is_active,
-        created_at: chrono::Utc::now().naive_utc(),
-        updated_at: chrono::Utc::now().naive_utc(),
+        created_at: chrono::Utc::now().to_rfc3339(),
+        updated_at: chrono::Utc::now().to_rfc3339(),
     };
 
     let credentials_data = form
@@ -149,7 +149,7 @@ pub async fn delete(
 ) -> Result<Response, StatusCode> {
     let id = params.id.parse::<i64>().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let cred_repo = CredentialRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let cred_repo = CredentialRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     cred_repo.delete(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

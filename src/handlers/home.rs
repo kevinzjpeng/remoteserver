@@ -14,7 +14,7 @@ pub async fn dashboard(
     Extension(session): Extension<SessionData>,
 ) -> Result<Html<String>, StatusCode> {
     let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
-    let env_repo = EnvironmentRepository::new(&state.db);
+    let env_repo = EnvironmentRepository::new(state.db.clone());
 
     let servers = server_repo.get_all().map_err(|e| {
         tracing::error!("Failed to load servers: {}", e);

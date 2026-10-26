@@ -127,7 +127,7 @@ impl ServerRepository {
 
     pub fn create(&self, server: &Server, password: &str, private_key: &str, passphrase: &str) -> Result<Server, ServerRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "INSERT INTO servers (name, hostname, port, username, environment_id, auth_type,
@@ -154,7 +154,7 @@ impl ServerRepository {
 
     pub fn update(&self, server: &Server, password: &str, private_key: &str, passphrase: &str) -> Result<(), ServerRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "UPDATE servers SET name = ?, hostname = ?, port = ?, username = ?, environment_id = ?,
@@ -209,7 +209,7 @@ impl ServerRepository {
 
     pub fn update_status(&self, id: i64, status: &str, is_intranet: bool) -> Result<(), ServerRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
         conn.execute(
             "UPDATE servers SET status = ?, is_intranet = ?, updated_at = ? WHERE id = ?",
             params![status, is_intranet, now, id],
@@ -220,7 +220,7 @@ impl ServerRepository {
 
     pub fn update_last_accessed(&self, id: i64) -> Result<(), ServerRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
         conn.execute(
             "UPDATE servers SET last_accessed = ? WHERE id = ?",
             params![now, id],

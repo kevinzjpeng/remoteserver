@@ -1,4 +1,3 @@
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +25,7 @@ pub struct Server {
     pub status: String,
     pub is_intranet: bool,
 
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-    pub last_accessed: Option<NaiveDateTime>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_accessed: Option<String>,
 }

@@ -37,7 +37,7 @@ pub async fn list(
     Extension(session): Extension<SessionData>,
 ) -> Result<Html<String>, StatusCode> {
     let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
-    let env_repo = EnvironmentRepository::new(&state.db);
+    let env_repo = EnvironmentRepository::new(state.db.clone());
 
     let servers = server_repo.get_all().map_err(|e| {
         tracing::error!("Failed to load servers: {}", e);
@@ -130,8 +130,8 @@ pub async fn create(
         notes: form.notes,
         status: "unknown".to_string(),
         is_intranet: false,
-        created_at: chrono::Utc::now().naive_utc(),
-        updated_at: chrono::Utc::now().naive_utc(),
+        created_at: chrono::Utc::now().to_rfc3339(),
+        updated_at: chrono::Utc::now().to_rfc3339(),
         last_accessed: None,
     };
 
@@ -197,7 +197,7 @@ pub async fn update(
         status: existing.status,
         is_intranet: existing.is_intranet,
         created_at: existing.created_at,
-        updated_at: chrono::Utc::now().naive_utc(),
+        updated_at: chrono::Utc::now().to_rfc3339(),
         last_accessed: existing.last_accessed,
     };
 

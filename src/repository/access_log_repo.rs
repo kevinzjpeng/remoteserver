@@ -1,6 +1,7 @@
 use crate::database::Database;
 use crate::models::AccessLog;
 use rusqlite::params;
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,12 +10,12 @@ pub enum AccessLogRepoError {
     Database(String),
 }
 
-pub struct AccessLogRepository<'a> {
-    db: &'a Database,
+pub struct AccessLogRepository {
+    db: Arc<Database>,
 }
 
-impl<'a> AccessLogRepository<'a> {
-    pub fn new(db: &'a Database) -> Self {
+impl AccessLogRepository {
+    pub fn new(db: Arc<Database>) -> Self {
         Self { db }
     }
 
@@ -27,7 +28,7 @@ impl<'a> AccessLogRepository<'a> {
         notes: &str,
     ) -> Result<(), AccessLogRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now().to_rfc3339();
 
         conn.execute(
             "INSERT INTO access_logs (server_id, user_id, accessed_at, connection_type, success, notes)
