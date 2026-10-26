@@ -13,7 +13,7 @@ pub async fn list(
     state: State<AppState>,
     Extension(session): Extension<SessionData>,
 ) -> Result<Html<String>, StatusCode> {
-    let server_repo = ServerRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
     let env_repo = EnvironmentRepository::new(&state.db);
 
     let servers = server_repo.get_all().map_err(|e| {

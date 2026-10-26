@@ -7,6 +7,7 @@ use thiserror::Error;
 pub struct Config {
     pub github_client_id: String,
     pub github_client_secret: String,
+    pub github_redirect_uri: String,
     pub session_secret: String,
     pub encryption_key: String,
     pub database_path: String,
@@ -43,11 +44,15 @@ pub fn load_config() -> Result<Config, ConfigError> {
     let internal_ip = env::var("INTERNAL_IP")
         .unwrap_or_else(|_| detect_internal_ip());
 
+    let github_redirect_uri = env::var("GITHUB_REDIRECT_URI")
+        .unwrap_or_else(|_| format!("{}/auth/github/callback", base_url));
+
     let session_duration = parse_session_duration()?;
 
     Ok(Config {
         github_client_id,
         github_client_secret,
+        github_redirect_uri,
         session_secret,
         encryption_key,
         database_path,

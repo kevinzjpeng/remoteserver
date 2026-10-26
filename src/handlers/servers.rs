@@ -36,7 +36,7 @@ pub async fn list(
     state: State<AppState>,
     Extension(session): Extension<SessionData>,
 ) -> Result<Html<String>, StatusCode> {
-    let server_repo = ServerRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
     let env_repo = EnvironmentRepository::new(&state.db);
 
     let servers = server_repo.get_all().map_err(|e| {
@@ -93,7 +93,7 @@ pub async fn create(
     state: State<AppState>,
     Form(form): Form<ServerForm>,
 ) -> Result<Response, StatusCode> {
-    let server_repo = ServerRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     let port = form
         .port
@@ -156,7 +156,7 @@ pub async fn update(
 ) -> Result<Response, StatusCode> {
     let id = params.id.parse::<i64>().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let server_repo = ServerRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     // Get existing server to preserve credentials if not updated
     let existing = server_repo.get_by_id(id).map_err(|_| StatusCode::NOT_FOUND)?;
@@ -228,7 +228,7 @@ pub async fn delete(
 ) -> Result<Response, StatusCode> {
     let id = params.id.parse::<i64>().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let server_repo = ServerRepository::new(&state.db, state.config.encryption_key.as_bytes().to_vec());
+    let server_repo = ServerRepository::new(state.db.clone(), state.config.encryption_key.as_bytes().to_vec());
 
     server_repo.delete(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

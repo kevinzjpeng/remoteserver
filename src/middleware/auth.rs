@@ -5,9 +5,10 @@ use axum::{
 };
 
 use crate::auth::session::{SessionData, SessionManager};
+use crate::AppState;
 
 pub async fn auth_middleware(
-    State(session_manager): State<SessionManager>,
+    State(state): State<AppState>,
     mut req: Request,
     next: Next,
 ) -> Response {
@@ -22,7 +23,7 @@ pub async fn auth_middleware(
         });
 
     let session = match session_cookie {
-        Some(cookie) => match session_manager.get_session(&cookie) {
+        Some(cookie) => match state.session_manager.get_session(&cookie) {
             Ok(s) => s,
             Err(_) => {
                 return axum::response::Redirect::to("/login").into_response();
@@ -38,7 +39,7 @@ pub async fn auth_middleware(
 }
 
 pub async fn auth_api_middleware(
-    State(session_manager): State<SessionManager>,
+    State(state): State<AppState>,
     mut req: Request,
     next: Next,
 ) -> Response {
@@ -53,7 +54,7 @@ pub async fn auth_api_middleware(
         });
 
     let session = match session_cookie {
-        Some(cookie) => match session_manager.get_session(&cookie) {
+        Some(cookie) => match state.session_manager.get_session(&cookie) {
             Ok(s) => s,
             Err(_) => {
                 return axum::http::StatusCode::UNAUTHORIZED.into_response();

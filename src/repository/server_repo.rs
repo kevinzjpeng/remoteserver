@@ -2,6 +2,7 @@ use crate::crypto::encryption;
 use crate::database::Database;
 use crate::models::Server;
 use rusqlite::params;
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -14,13 +15,13 @@ pub enum ServerRepoError {
     Encryption(String),
 }
 
-pub struct ServerRepository<'a> {
-    db: &'a Database,
+pub struct ServerRepository {
+    db: Arc<Database>,
     encryption_key: Vec<u8>,
 }
 
-impl<'a> ServerRepository<'a> {
-    pub fn new(db: &'a Database, encryption_key: Vec<u8>) -> Self {
+impl ServerRepository {
+    pub fn new(db: Arc<Database>, encryption_key: Vec<u8>) -> Self {
         Self { db, encryption_key }
     }
 
