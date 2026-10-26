@@ -1,8 +1,9 @@
 mod auth;
 mod config;
-mod database;
-mod models;
 mod crypto;
+mod database;
+mod middleware;
+mod models;
 mod repository;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
