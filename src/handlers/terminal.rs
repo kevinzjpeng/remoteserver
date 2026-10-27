@@ -472,31 +472,8 @@ pub async fn terminal_page(
                 debugLog("Focusing terminal");
                 term.focus();
             }}
-            // Check if this is a reconnect to an existing session
-            debugLog("Checking for existing session...");
-            fetch("/api/sessions?server_id=" + serverId + "&session=default", {{ credentials: "same-origin" }})
-                .then(function(r) {{
-                    debugLog("Session API response status: " + r.status);
-                    return r.json();
-                }})
-                .then(function(data) {{
-                    debugLog("Session API response: " + JSON.stringify(data));
-                    if (data.sessions && data.sessions.length > 0) {{
-                        var s = data.sessions[0];
-                        debugLog("Found session: " + JSON.stringify(s));
-                        if (s.client_count > 1 || (s.client_count === 1 && s.active)) {{
-                            debugLog("This is a reconnect, showing message");
-                            term.write("\r\n\x1b[33m[Reconnected to existing session]\x1b[0m\r\n");
-                        }} else {{
-                            debugLog("Session exists but not active or only 1 client");
-                        }}
-                    }} else {{
-                        debugLog("No sessions found");
-                    }}
-                }})
-                .catch(function(e) {{
-                    debugLog("Session check failed: " + e.message, true);
-                }});
+            // Reconnection is detected by receiving buffered output from the server
+            // No need to call /api/sessions which can cause lock contention
         }};
 
         ws.onmessage = function(event) {{
