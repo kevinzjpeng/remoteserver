@@ -182,9 +182,19 @@ impl SessionManager {
         let sessions = self.sessions.lock().unwrap();
         let prefix = format!("{}:", server_id);
 
-        sessions
+        // First, collect session references while holding the sessions lock
+        let session_refs: Vec<_> = sessions
             .values()
             .filter(|s| s.id.starts_with(&prefix))
+            .cloned()
+            .collect();
+
+        // Release the sessions lock before acquiring individual session locks
+        drop(sessions);
+
+        // Now safely acquire individual locks without risk of deadlock
+        session_refs
+            .into_iter()
             .map(|s| SessionInfo {
                 id: s.id.clone(),
                 name: s.name.clone(),
@@ -202,7 +212,10 @@ impl SessionManager {
         let session_id = format!("{}:{}", server_id, session_name);
         let sessions = self.sessions.lock().unwrap();
         if let Some(session) = sessions.get(&session_id) {
-            let mut buf = session.output_buffer.lock().unwrap();
+            // Clone the reference to release sessions lock before acquiring output_buffer lock
+            let output_buffer = Arc::clone(&session.output_buffer);
+            drop(sessions);
+            let mut buf = output_buffer.lock().unwrap();
             buf.extend_from_slice(data);
             // Trim from front if over capacity
             if buf.len() > Self::BUFFER_SIZE {
@@ -216,7 +229,10 @@ impl SessionManager {
         let session_id = format!("{}:{}", server_id, session_name);
         let sessions = self.sessions.lock().unwrap();
         if let Some(session) = sessions.get(&session_id) {
-            session.output_buffer.lock().unwrap().clone()
+            let output_buffer = Arc::clone(&session.output_buffer);
+            drop(sessions);
+            let result = output_buffer.lock().unwrap().clone();
+            result
         } else {
             Vec::new()
         }
