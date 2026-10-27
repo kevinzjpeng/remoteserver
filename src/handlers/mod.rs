@@ -51,6 +51,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/terminal", get(terminal::terminal_page))
         .route("/ws/terminal", get(terminal::terminal_ws))
         .route("/api/sessions", get(terminal::list_sessions))
+        .route("/api/sessions/close", post(terminal::close_session))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth::auth_middleware,
