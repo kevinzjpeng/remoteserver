@@ -42,13 +42,19 @@ pub enum OAuthError {
 
 impl GitHubOAuthClient {
     pub fn new(client_id: String, client_secret: String, redirect_url: String) -> Self {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .build()
+            .expect("Failed to build HTTP client");
+
         Self {
             config: GitHubOAuthConfig {
                 client_id,
                 client_secret,
                 redirect_url,
             },
-            client: Client::new(),
+            client,
         }
     }
 

@@ -2080,6 +2080,7 @@ dependencies = [
  "dotenvy",
  "futures",
  "humantime",
+ "lazy_static",
  "rand 0.8.8",
  "reqwest",
  "rusqlite",

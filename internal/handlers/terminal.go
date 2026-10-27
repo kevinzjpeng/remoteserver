@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -16,11 +18,21 @@ import (
 )
 
 type TerminalHandler struct {
-	servers *repository.ServerRepository
+	servers        *repository.ServerRepository
+	sessionManager *SessionManager
 }
 
 func NewTerminalHandler(servers *repository.ServerRepository) *TerminalHandler {
-	return &TerminalHandler{servers: servers}
+	return &TerminalHandler{
+		servers:        servers,
+		sessionManager: NewSessionManager(),
+	}
+}
+
+func generateSessionID() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }
 
 var upgrader = websocket.Upgrader{
@@ -37,6 +49,12 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get or generate session ID
+	sessionID := r.URL.Query().Get("session_id")
+	if sessionID == "" {
+		sessionID = generateSessionID()
+	}
+
 	// Get server details
 	server, err := h.servers.GetByID(serverID)
 	if err != nil {
@@ -44,31 +62,8 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Terminal connection attempt: server=%s, auth_type=%s, username=%s", server.Name, server.AuthType, server.Username)
-
-	// Get password if auth type is password
-	var password string
-	if server.AuthType == "password" {
-		password, err = h.servers.GetPassword(serverID)
-		if err != nil {
-			log.Printf("Failed to get password: %v", err)
-			http.Error(w, "Failed to get credentials", http.StatusInternalServerError)
-			return
-		}
-		log.Printf("Password retrieved, length=%d", len(password))
-	}
-
-	// Get private key if auth type is key
-	var privateKey string
-	if server.AuthType == "key" {
-		privateKey, err = h.servers.GetPrivateKey(serverID)
-		if err != nil {
-			log.Printf("Failed to get private key: %v", err)
-			http.Error(w, "Failed to get credentials", http.StatusInternalServerError)
-			return
-		}
-		log.Printf("Private key retrieved, length=%d", len(privateKey))
-	}
+	log.Printf("Terminal connection attempt: server=%s, session=%s, auth_type=%s, username=%s",
+		server.Name, sessionID, server.AuthType, server.Username)
 
 	// Upgrade to WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -77,6 +72,58 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	// Send session ID to client
+	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("__SESSION_ID__:%s\n", sessionID)))
+
+	// Check if session already exists
+	termSession, exists := h.sessionManager.GetSession(sessionID)
+	if exists && !termSession.IsClosed() {
+		log.Printf("Reattaching to existing session: %s", sessionID)
+		conn.WriteMessage(websocket.TextMessage, []byte("Reconnected to existing session\r\n"))
+		h.reattachToSession(conn, termSession)
+		return
+	}
+
+	// Create new SSH session
+	termSession, err = h.createSSHSession(serverID, server)
+	if err != nil {
+		log.Printf("Failed to create SSH session: %v", err)
+		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: %v", err)))
+		return
+	}
+
+	// Store session
+	h.sessionManager.CreateSession(sessionID, serverID, termSession.SSHClient, termSession.Session,
+		termSession.Stdin, termSession.Stdout, termSession.Stderr)
+
+	// Send success message
+	conn.WriteMessage(websocket.TextMessage, []byte("Connected to "+server.Name+"\r\n"))
+
+	// Handle the session
+	h.handleSession(conn, termSession)
+}
+
+func (h *TerminalHandler) createSSHSession(serverID int64, server *repository.Server) (*TerminalSession, error) {
+	// Get password if auth type is password
+	var password string
+	if server.AuthType == "password" {
+		var err error
+		password, err = h.servers.GetPassword(serverID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get credentials: %v", err)
+		}
+	}
+
+	// Get private key if auth type is key
+	var privateKey string
+	if server.AuthType == "key" {
+		var err error
+		privateKey, err = h.servers.GetPrivateKey(serverID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get credentials: %v", err)
+		}
+	}
 
 	// Build SSH config
 	config := &ssh.ClientConfig{
@@ -92,9 +139,7 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 	} else if server.AuthType == "key" && privateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(privateKey))
 		if err != nil {
-			log.Printf("Failed to parse private key: %v", err)
-			conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: Failed to parse private key: %v", err)))
-			return
+			return nil, fmt.Errorf("failed to parse private key: %v", err)
 		}
 		config.Auth = append(config.Auth, ssh.PublicKeys(signer))
 	}
@@ -103,20 +148,15 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 	addr := fmt.Sprintf("%s:%d", server.Hostname, server.Port)
 	sshClient, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
-		log.Printf("SSH connection failed: %v", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: SSH connection failed: %v", err)))
-		return
+		return nil, fmt.Errorf("SSH connection failed: %v", err)
 	}
-	defer sshClient.Close()
 
 	// Create SSH session
 	session, err := sshClient.NewSession()
 	if err != nil {
-		log.Printf("Failed to create SSH session: %v", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: Failed to create session: %v", err)))
-		return
+		sshClient.Close()
+		return nil, fmt.Errorf("failed to create session: %v", err)
 	}
-	defer session.Close()
 
 	// Set up terminal modes
 	modes := ssh.TerminalModes{
@@ -127,52 +167,63 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 
 	// Request pseudo terminal
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		log.Printf("Failed to request PTY: %v", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: Failed to request PTY: %v", err)))
-		return
+		session.Close()
+		sshClient.Close()
+		return nil, fmt.Errorf("failed to request PTY: %v", err)
 	}
 
 	// Set up pipes
 	stdin, err := session.StdinPipe()
 	if err != nil {
-		log.Printf("Failed to create stdin pipe: %v", err)
-		return
+		session.Close()
+		sshClient.Close()
+		return nil, fmt.Errorf("failed to create stdin pipe: %v", err)
 	}
 
 	stdout, err := session.StdoutPipe()
 	if err != nil {
-		log.Printf("Failed to create stdout pipe: %v", err)
-		return
+		session.Close()
+		sshClient.Close()
+		return nil, fmt.Errorf("failed to create stdout pipe: %v", err)
 	}
 
 	stderr, err := session.StderrPipe()
 	if err != nil {
-		log.Printf("Failed to create stderr pipe: %v", err)
-		return
+		session.Close()
+		sshClient.Close()
+		return nil, fmt.Errorf("failed to create stderr pipe: %v", err)
 	}
 
 	// Start shell
 	if err := session.Shell(); err != nil {
-		log.Printf("Failed to start shell: %v", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: Failed to start shell: %v", err)))
-		return
+		session.Close()
+		sshClient.Close()
+		return nil, fmt.Errorf("failed to start shell: %v", err)
 	}
 
-	// Send success message
-	conn.WriteMessage(websocket.TextMessage, []byte("Connected to "+server.Name+"\r\n"))
+	return &TerminalSession{
+		SSHClient: sshClient,
+		Session:   session,
+		Stdin:     stdin,
+		Stdout:    stdout,
+		Stderr:    stderr,
+	}, nil
+}
 
-	// Goroutine to read from SSH and send to WebSocket
+func (h *TerminalHandler) handleSession(conn *websocket.Conn, termSession *TerminalSession) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
+	// Goroutine to read from SSH stdout and send to WebSocket
 	go func() {
 		defer wg.Done()
-		io.Copy(&websocketWriter{conn: conn}, stdout)
+		io.Copy(&websocketWriter{conn: conn}, termSession.Stdout)
 	}()
 
+	// Goroutine to read from SSH stderr and send to WebSocket
 	go func() {
 		defer wg.Done()
-		io.Copy(&websocketWriter{conn: conn}, stderr)
+		io.Copy(&websocketWriter{conn: conn}, termSession.Stderr)
 	}()
 
 	// Goroutine to read from WebSocket and send to SSH
@@ -180,16 +231,51 @@ func (h *TerminalHandler) Terminal(w http.ResponseWriter, r *http.Request) {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				log.Printf("WebSocket read error: %v", err)
+				log.Printf("WebSocket read error (session stays alive): %v", err)
 				break
 			}
-			stdin.Write(message)
+			termSession.WriteStdin(message)
 		}
 	}()
 
-	// Wait for SSH session to complete
-	session.Wait()
-	wg.Wait()
+	// Wait for SSH session to complete (not WebSocket close)
+	termSession.Wait()
+	log.Printf("SSH session ended: %s", termSession.ID)
+	h.sessionManager.RemoveSession(termSession.ID)
+}
+
+func (h *TerminalHandler) reattachToSession(conn *websocket.Conn, termSession *TerminalSession) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Goroutine to read from SSH stdout and send to WebSocket
+	go func() {
+		defer wg.Done()
+		io.Copy(&websocketWriter{conn: conn}, termSession.Stdout)
+	}()
+
+	// Goroutine to read from SSH stderr and send to WebSocket
+	go func() {
+		defer wg.Done()
+		io.Copy(&websocketWriter{conn: conn}, termSession.Stderr)
+	}()
+
+	// Goroutine to read from WebSocket and send to SSH
+	go func() {
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Printf("WebSocket read error (session stays alive): %v", err)
+				break
+			}
+			termSession.WriteStdin(message)
+		}
+	}()
+
+	// Wait for SSH session to complete (not WebSocket close)
+	termSession.Wait()
+	log.Printf("SSH session ended: %s", termSession.ID)
+	h.sessionManager.RemoveSession(termSession.ID)
 }
 
 type websocketWriter struct {

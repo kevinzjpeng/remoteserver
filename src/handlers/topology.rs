@@ -81,7 +81,7 @@ pub async fn list(
                     env_name,
                     servers
                         .iter()
-                        .map(|s| format!("<li>{} ({}) - {}</li>", s.name, s.hostname, s.status))
+                        .map(|s| format!("<li><a href=\"/terminal?server_id={}&server_name={}\">{}</a> ({}) - {}</li>", s.id, s.name, s.name, s.hostname, s.status))
                         .collect::<Vec<_>>()
                         .join("\n")
                 )

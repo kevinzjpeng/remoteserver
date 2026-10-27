@@ -12,24 +12,31 @@ pub async fn auth_middleware(
     mut req: Request,
     next: Next,
 ) -> Response {
-    let session_cookie = req
-        .headers()
-        .get("cookie")
-        .and_then(|c| c.to_str().ok())
+    let cookie_header = req.headers().get("cookie").and_then(|c| c.to_str().ok());
+    tracing::info!("Auth middleware - Cookie header: {:?}", cookie_header);
+
+    let session_cookie = cookie_header
         .and_then(|c| {
             c.split(';')
                 .find(|c| c.trim().starts_with("session="))
                 .map(|c| c.trim().trim_start_matches("session=").to_string())
         });
 
+    tracing::info!("Session cookie found: {}", session_cookie.is_some());
+
     let session = match session_cookie {
         Some(cookie) => match state.session_manager.get_session(&cookie) {
-            Ok(s) => s,
-            Err(_) => {
+            Ok(s) => {
+                tracing::info!("Session valid for user: {}", s.username);
+                s
+            }
+            Err(e) => {
+                tracing::warn!("Session validation failed: {:?}", e);
                 return axum::response::Redirect::to("/login").into_response();
             }
         },
         None => {
+            tracing::info!("No session cookie found");
             return axum::response::Redirect::to("/login").into_response();
         }
     };

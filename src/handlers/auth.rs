@@ -52,6 +52,8 @@ pub async fn callback(
     state: State<AppState>,
     Query(params): Query<CallbackParams>,
 ) -> Result<Response, StatusCode> {
+    tracing::info!("OAuth callback received with code: {}", params.code);
+
     // Exchange code for access token
     let access_token = state
         .github_oauth
@@ -62,11 +64,15 @@ pub async fn callback(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    tracing::info!("Successfully exchanged code for access token");
+
     // Get user info from GitHub
     let github_user = state.github_oauth.get_user(&access_token).await.map_err(|e| {
         error!("Failed to get GitHub user: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+
+    tracing::info!("Got GitHub user: {}", github_user.login);
 
     let user_repo = UserRepository::new(state.db.clone());
 
@@ -109,11 +115,15 @@ pub async fn callback(
     );
 
     // Set session cookie and clear state cookie
+    // Secure flag is required for SameSite=None
     let session_header = format!(
-        "session={}; Path=/; HttpOnly; SameSite=None; Max-Age={}",
+        "session={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         session_cookie,
         state.config.session_duration.as_secs()
     );
+
+    tracing::info!("Setting session cookie: {}", session_header);
+
     let clear_state = "oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
 
     let response = Redirect::to("/");
@@ -127,6 +137,8 @@ pub async fn callback(
         axum::http::header::SET_COOKIE,
         clear_state.parse().unwrap(),
     );
+
+    tracing::info!("Redirecting to / with session cookie set");
 
     Ok(response)
 }

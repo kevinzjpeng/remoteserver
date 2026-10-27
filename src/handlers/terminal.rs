@@ -374,13 +374,19 @@ pub async fn terminal_page(
         // Handle input from mobile textarea
         mobileInput.addEventListener("input", function(e) {{
             var newValue = mobileInput.value;
+            debugLog("Mobile input: newValue.length=" + newValue.length + ", lastValue.length=" + lastValue.length);
             if (newValue.length > lastValue.length) {{
                 var added = newValue.substring(lastValue.length);
+                debugLog("Mobile input added: " + JSON.stringify(added));
                 if (ws && ws.readyState === WebSocket.OPEN) {{
                     ws.send(added);
+                    debugLog("Sent mobile input via WebSocket");
+                }} else {{
+                    debugLog("WebSocket not ready for mobile input, readyState=" + (ws ? ws.readyState : "null"), true);
                 }}
             }} else if (newValue.length < lastValue.length) {{
                 var deleted = lastValue.length - newValue.length;
+                debugLog("Mobile input deleted: " + deleted + " chars");
                 for (var i = 0; i < deleted; i++) {{
                     if (ws && ws.readyState === WebSocket.OPEN) {{
                         ws.send("\x08");
@@ -394,8 +400,12 @@ pub async fn terminal_page(
         mobileInput.addEventListener("keydown", function(e) {{
             if (e.key === "Enter") {{
                 e.preventDefault();
+                debugLog("Mobile Enter key pressed");
                 if (ws && ws.readyState === WebSocket.OPEN) {{
                     ws.send("\r");
+                    debugLog("Sent Enter via WebSocket");
+                }} else {{
+                    debugLog("WebSocket not ready for Enter, readyState=" + (ws ? ws.readyState : "null"), true);
                 }}
                 mobileInput.value = "";
                 lastValue = "";
@@ -456,26 +466,44 @@ pub async fn terminal_page(
         }}
 
         ws.onopen = function() {{
-            debugLog("WebSocket connected successfully");
+            debugLog("WebSocket connected successfully, readyState: " + ws.readyState);
             startPing();
-            if (term) term.focus();
+            if (term) {{
+                debugLog("Focusing terminal");
+                term.focus();
+            }}
             // Check if this is a reconnect to an existing session
+            debugLog("Checking for existing session...");
             fetch("/api/sessions?server_id=" + serverId + "&session=default", {{ credentials: "same-origin" }})
-                .then(function(r) {{ return r.json(); }})
+                .then(function(r) {{
+                    debugLog("Session API response status: " + r.status);
+                    return r.json();
+                }})
                 .then(function(data) {{
+                    debugLog("Session API response: " + JSON.stringify(data));
                     if (data.sessions && data.sessions.length > 0) {{
                         var s = data.sessions[0];
+                        debugLog("Found session: " + JSON.stringify(s));
                         if (s.client_count > 1 || (s.client_count === 1 && s.active)) {{
+                            debugLog("This is a reconnect, showing message");
                             term.write("\r\n\x1b[33m[Reconnected to existing session]\x1b[0m\r\n");
+                        }} else {{
+                            debugLog("Session exists but not active or only 1 client");
                         }}
+                    }} else {{
+                        debugLog("No sessions found");
                     }}
                 }})
-                .catch(function(e) {{ /* ignore */ }});
+                .catch(function(e) {{
+                    debugLog("Session check failed: " + e.message, true);
+                }});
         }};
 
         ws.onmessage = function(event) {{
+            debugLog("WebSocket message received, type: " + (event.data instanceof Blob ? "Blob" : typeof event.data) + ", size: " + (event.data instanceof Blob ? event.data.size : event.data.length));
             if (event.data instanceof Blob) {{
                 event.data.text().then(function(text) {{
+                    debugLog("Blob converted to text, length: " + text.length);
                     // Check if it is a pong response
                     if (text.indexOf("pong") !== -1) {{
                         try {{
@@ -494,7 +522,10 @@ pub async fn terminal_page(
                         }} catch (e) {{}}
                         return;
                     }}
-                    if (term) term.write(text);
+                    if (term) {{
+                        debugLog("Writing " + text.length + " chars to terminal");
+                        term.write(text);
+                    }}
                 }});
             }} else {{
                 // Check if it is a pong response
@@ -515,7 +546,10 @@ pub async fn terminal_page(
                     }} catch (e) {{}}
                     return;
                 }}
-                if (term) term.write(event.data);
+                if (term) {{
+                    debugLog("Writing text to terminal, length: " + event.data.length);
+                    term.write(event.data);
+                }}
             }}
         }};
 
@@ -533,9 +567,14 @@ pub async fn terminal_page(
 
         // Send terminal input to WebSocket
         if (term) {{
+            debugLog("Setting up term.onData handler");
             term.onData(function(data) {{
+                debugLog("term.onData called, data: " + JSON.stringify(data) + ", ws.readyState: " + (ws ? ws.readyState : "null"));
                 if (ws && ws.readyState === WebSocket.OPEN) {{
                     ws.send(data);
+                    debugLog("Sent data via WebSocket");
+                }} else {{
+                    debugLog("WebSocket not ready for term.onData, readyState=" + (ws ? ws.readyState : "null"), true);
                 }}
             }});
         }}
@@ -549,6 +588,7 @@ pub async fn terminal_page(
                     cols: term.cols,
                     rows: term.rows
                 }}));
+                debugLog("Sent resize: " + term.cols + "x" + term.rows);
             }}
         }});
     </script>
@@ -664,7 +704,7 @@ async fn handle_socket(
 
         // Create SSH config
         let config = Arc::new(Config {
-            inactivity_timeout: Some(std::time::Duration::from_secs(30)),
+            inactivity_timeout: None, // No timeout - keep connection alive for session persistence
             ..Config::default()
         });
 
@@ -787,7 +827,9 @@ async fn handle_socket(
                                 let _ = broadcast_tx_clone.send(data.to_vec());
                             }
                             Some(ChannelMsg::Eof) | Some(ChannelMsg::Close) | None => {
-                                tracing::info!("SSH channel closed");
+                                tracing::info!("SSH channel closed, removing session from manager");
+                                // Remove session from manager so reconnecting clients create a new session
+                                let _ = session_mgr.close_session(server_id, &session_name);
                                 break;
                             }
                             _ => {}
@@ -864,19 +906,30 @@ async fn handle_socket(
     if !buffer.is_empty() {
         tracing::info!("Sending {} bytes of buffered output to reconnecting client", buffer.len());
         let mut socket = socket_tx.lock().await;
-        let _ = socket.send(Message::Binary(buffer)).await;
+        match socket.send(Message::Binary(buffer)).await {
+            Ok(_) => tracing::info!("Buffer sent successfully"),
+            Err(e) => tracing::error!("Failed to send buffer: {:?}", e),
+        }
     }
 
     // Increment connection count
     state.ssh_session_manager.increment_connections(params.server_id, &params.session);
 
-    tracing::info!("Client attached to session: {}", session.id);
+    tracing::info!("Client attached to session: {}, command_sender available: {}", session.id, session.command_sender.capacity());
 
     // Relay loop: broadcast → WebSocket, WebSocket → command_sender
     // Use the same polling pattern as the original code but with broadcast channel
+    tracing::info!("Starting relay loop for session {}", session.id);
+    let mut loop_count = 0;
     loop {
+        loop_count += 1;
+        if loop_count % 1000 == 0 {
+            tracing::info!("Relay loop iteration {} for session {}", loop_count, session.id);
+        }
+
         // 1. Forward SSH data from broadcast to WebSocket (non-blocking)
         while let Ok(data) = broadcast_rx.try_recv() {
+            tracing::info!("Forwarding {} bytes from broadcast to WebSocket", data.len());
             let mut socket = socket_tx.lock().await;
             if socket.send(Message::Binary(data)).await.is_err() {
                 tracing::info!("WebSocket send failed, client disconnected");
@@ -888,9 +941,18 @@ async fn handle_socket(
         let ws_msg = {
             let mut socket = socket_tx.lock().await;
             match tokio::time::timeout(std::time::Duration::from_millis(10), socket.next()).await {
-                Ok(Some(Ok(msg))) => Some(msg),
-                Ok(Some(Err(_))) => break,
-                Ok(None) => break,
+                Ok(Some(Ok(msg))) => {
+                    tracing::info!("Received WebSocket message: {:?}", msg);
+                    Some(msg)
+                }
+                Ok(Some(Err(e))) => {
+                    tracing::info!("WebSocket read error: {:?}, breaking", e);
+                    break;
+                }
+                Ok(None) => {
+                    tracing::info!("WebSocket closed (None), breaking");
+                    break;
+                }
                 Err(_) => None,
             }
         };
@@ -898,10 +960,13 @@ async fn handle_socket(
         if let Some(msg) = ws_msg {
             match msg {
                 Message::Text(text) => {
+                    tracing::info!("Received Text message: {} bytes", text.len());
                     if let Ok(control) = serde_json::from_str::<WsMessage>(&text) {
                         match control {
                             WsMessage::Resize { cols, rows } => {
+                                tracing::info!("Resize to {}x{}", cols, rows);
                                 if session.command_sender.send(SshCommand::Resize { cols: cols as u32, rows: rows as u32 }).await.is_err() {
+                                    tracing::error!("Failed to send resize command");
                                     break;
                                 }
                             }
@@ -915,17 +980,22 @@ async fn handle_socket(
                             _ => {}
                         }
                     } else {
+                        tracing::info!("Sending {} bytes of text to SSH", text.len());
                         if session.command_sender.send(SshCommand::Data(text.into_bytes())).await.is_err() {
+                            tracing::error!("Failed to send text data to SSH");
                             break;
                         }
                     }
                 }
                 Message::Binary(data) => {
+                    tracing::info!("Sending {} bytes of binary data to SSH", data.len());
                     if session.command_sender.send(SshCommand::Data(data)).await.is_err() {
+                        tracing::error!("Failed to send binary data to SSH");
                         break;
                     }
                 }
                 Message::Close(_) => {
+                    tracing::info!("Received WebSocket close message");
                     break;
                 }
                 _ => {}

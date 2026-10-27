@@ -84,9 +84,15 @@
         term.open(document.getElementById('terminal-container'));
         fitAddon.fit();
 
+        // Get or create session ID for this server
+        const sessionKey = `terminal_session_${serverId}`;
+        let sessionId = localStorage.getItem(sessionKey);
+
         // Connect to WebSocket
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//${window.location.host}/ws/terminal?server_id=${serverId}`;
+        const wsUrl = sessionId
+            ? `${wsProtocol}//${window.location.host}/ws/terminal?server_id=${serverId}&session_id=${sessionId}`
+            : `${wsProtocol}//${window.location.host}/ws/terminal?server_id=${serverId}`;
         const ws = new WebSocket(wsUrl);
 
         const statusEl = document.getElementById('status');
@@ -98,6 +104,13 @@
         };
 
         ws.onmessage = function(event) {
+            // Check if this is a session ID message
+            if (event.data.startsWith('__SESSION_ID__:')) {
+                const newSessionId = event.data.substring('__SESSION_ID__:'.length).trim();
+                localStorage.setItem(sessionKey, newSessionId);
+                console.log('Session ID stored:', newSessionId);
+                return;
+            }
             term.write(event.data);
         };
 
@@ -110,7 +123,7 @@
         ws.onclose = function() {
             statusEl.textContent = 'Disconnected';
             statusEl.className = 'status-disconnected';
-            term.write('\r\n\x1b[31mConnection closed\x1b[0m\r\n');
+            term.write('\r\n\x1b[31mConnection closed. Session preserved - refresh to reconnect.\x1b[0m\r\n');
         };
 
         // Send terminal input to WebSocket

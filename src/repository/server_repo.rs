@@ -185,26 +185,95 @@ impl ServerRepository {
 
     pub fn get_password(&self, id: i64) -> Result<String, ServerRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let encrypted: Option<Vec<u8>> = conn
+
+        // Read as raw bytes to avoid UTF-8 validation on TEXT columns with binary data
+        let encrypted: Vec<u8> = conn
             .query_row(
                 "SELECT password_encrypted FROM servers WHERE id = ?",
                 params![id],
-                |row| row.get(0),
+                |row| {
+                    // Try to get as bytes first, fall back to string conversion
+                    match row.get_ref(0)? {
+                        rusqlite::types::ValueRef::Blob(b) => Ok(b.to_vec()),
+                        rusqlite::types::ValueRef::Text(b) => Ok(b.to_vec()),
+                        rusqlite::types::ValueRef::Null => Ok(Vec::new()),
+                        _ => Ok(Vec::new()),
+                    }
+                },
             )
-            .map_err(|e| ServerRepoError::Database(e.to_string()))?;
-        self.decrypt_field(&encrypted)
+            .unwrap_or_else(|e| {
+                tracing::warn!("Failed to get password for server {}: {}", id, e);
+                Vec::new()
+            });
+
+        if encrypted.is_empty() {
+            tracing::warn!("Password is empty for server {}", id);
+            return Ok(String::new());
+        }
+
+        tracing::info!("Decrypting password for server {} (encrypted length: {})", id, encrypted.len());
+        let decrypted = encryption::decrypt(&encrypted, &self.encryption_key)
+            .map_err(|e| {
+                tracing::error!("Failed to decrypt password for server {}: {}", id, e);
+                ServerRepoError::Encryption(e.to_string())
+            })?;
+        let result = String::from_utf8_lossy(&decrypted).to_string();
+        tracing::info!("Decrypted password length: {}", result.len());
+        Ok(result)
     }
 
     pub fn get_private_key(&self, id: i64) -> Result<String, ServerRepoError> {
         let conn = self.db.conn.lock().unwrap();
-        let encrypted: Option<Vec<u8>> = conn
+
+        let encrypted: Vec<u8> = conn
             .query_row(
                 "SELECT private_key_encrypted FROM servers WHERE id = ?",
                 params![id],
-                |row| row.get(0),
+                |row| {
+                    match row.get_ref(0)? {
+                        rusqlite::types::ValueRef::Blob(b) => Ok(b.to_vec()),
+                        rusqlite::types::ValueRef::Text(b) => Ok(b.to_vec()),
+                        rusqlite::types::ValueRef::Null => Ok(Vec::new()),
+                        _ => Ok(Vec::new()),
+                    }
+                },
             )
-            .map_err(|e| ServerRepoError::Database(e.to_string()))?;
-        self.decrypt_field(&encrypted)
+            .unwrap_or_default();
+
+        if encrypted.is_empty() {
+            return Ok(String::new());
+        }
+
+        let decrypted = encryption::decrypt(&encrypted, &self.encryption_key)
+            .map_err(|e| ServerRepoError::Encryption(e.to_string()))?;
+        Ok(String::from_utf8_lossy(&decrypted).to_string())
+    }
+
+    pub fn get_passphrase(&self, id: i64) -> Result<String, ServerRepoError> {
+        let conn = self.db.conn.lock().unwrap();
+
+        let encrypted: Vec<u8> = conn
+            .query_row(
+                "SELECT passphrase_encrypted FROM servers WHERE id = ?",
+                params![id],
+                |row| {
+                    match row.get_ref(0)? {
+                        rusqlite::types::ValueRef::Blob(b) => Ok(b.to_vec()),
+                        rusqlite::types::ValueRef::Text(b) => Ok(b.to_vec()),
+                        rusqlite::types::ValueRef::Null => Ok(Vec::new()),
+                        _ => Ok(Vec::new()),
+                    }
+                },
+            )
+            .unwrap_or_default();
+
+        if encrypted.is_empty() {
+            return Ok(String::new());
+        }
+
+        let decrypted = encryption::decrypt(&encrypted, &self.encryption_key)
+            .map_err(|e| ServerRepoError::Encryption(e.to_string()))?;
+        Ok(String::from_utf8_lossy(&decrypted).to_string())
     }
 
     pub fn update_status(&self, id: i64, status: &str, is_intranet: bool) -> Result<(), ServerRepoError> {
