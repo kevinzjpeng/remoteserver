@@ -414,6 +414,18 @@ pub async fn terminal_page(
             debugLog("WebSocket connected successfully");
             startPing();
             if (term) term.focus();
+            // Check if this is a reconnect to an existing session
+            fetch("/api/sessions?server_id=" + serverId + "&session=default", {{ credentials: "same-origin" }})
+                .then(function(r) {{ return r.json(); }})
+                .then(function(data) {{
+                    if (data.sessions && data.sessions.length > 0) {{
+                        var s = data.sessions[0];
+                        if (s.client_count > 1 || (s.client_count === 1 && s.active)) {{
+                            term.write("\r\n\x1b[33m[Reconnected to existing session]\x1b[0m\r\n");
+                        }}
+                    }}
+                }})
+                .catch(function(e) {{ /* ignore */ }});
         }};
 
         ws.onmessage = function(event) {{
