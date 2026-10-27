@@ -104,6 +104,9 @@ impl SessionManager {
         sessions.get(&session_id).cloned()
     }
 
+    /// Store a new session. Returns Ok(session) if this is a new session,
+    /// or Err(existing_session) if a session with this ID already exists.
+    /// The caller is responsible for cleaning up the unused SSH connection if Err is returned.
     pub fn store_session(
         &self,
         server_id: i64,
@@ -111,10 +114,17 @@ impl SessionManager {
         ssh_client: Handle<ClientHandler>,
         command_sender: mpsc::Sender<SshCommand>,
         data_broadcaster: broadcast::Sender<Vec<u8>>,
-    ) -> Arc<Session> {
+    ) -> Result<Arc<Session>, Arc<Session>> {
         let session_id = format!("{}:{}", server_id, session_name);
 
         let mut sessions = self.sessions.lock().unwrap();
+
+        // Check if session already exists (handles race condition where two
+        // connections arrive simultaneously for the same session)
+        if let Some(existing) = sessions.get(&session_id) {
+            tracing::warn!("Session {} already exists, returning existing session", session_id);
+            return Err(Arc::clone(existing));
+        }
 
         let session = Arc::new(Session {
             id: session_id.clone(),
@@ -131,7 +141,7 @@ impl SessionManager {
 
         sessions.insert(session_id, Arc::clone(&session));
         tracing::info!("Stored SSH session: {}", session.id);
-        session
+        Ok(session)
     }
 
     pub fn increment_connections(&self, server_id: i64, session_name: &str) {

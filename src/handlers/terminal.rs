@@ -176,11 +176,17 @@ pub async fn terminal_page(
                     <polyline points="15 18 9 12 15 6"/>
                 </svg>
             </a>
-            <button id="disconnect-btn" onclick="event.stopPropagation(); disconnect()" title="断开连接">
+            <button id="disconnect-btn" onclick="event.stopPropagation(); disconnect()" title="Detach from session (session continues running)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+            </button>
+            <button id="close-session-btn" onclick="event.stopPropagation(); closeSession()" title="Terminate SSH session" style="background:#fd7e14;color:#fff;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;margin-left:5px;z-index:1001;position:relative;display:flex;align-items:center;justify-content:center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
         </div>
@@ -292,9 +298,9 @@ pub async fn terminal_page(
             showDebug("Terminal init error: " + e.message, true);
         }}
 
-        // Disconnect function
+        // Disconnect function (detach - session continues running)
         function disconnect() {{
-            debugLog("Disconnect button clicked");
+            debugLog("Detach button clicked");
             try {{
                 if (window.ws && window.ws.readyState !== undefined) {{
                     if (window.ws.readyState === WebSocket.OPEN) {{
@@ -302,11 +308,50 @@ pub async fn terminal_page(
                     }}
                 }}
                 if (term) {{
-                    term.write("\r\n\x1b[31mDisconnected by user\x1b[0m\r\n");
+                    term.write("\r\n\x1b[33mDetached from session. Session continues running.\x1b[0m\r\n");
+                    term.write("\x1b[33mRefresh this page to reconnect.\x1b[0m\r\n");
                 }}
                 if (typeof stopPing !== "undefined") stopPing();
             }} catch (e) {{
                 debugLog("Error in disconnect: " + e.message, true);
+            }}
+        }}
+
+        // Close session function (terminate SSH session)
+        function closeSession() {{
+            if (!confirm("Terminate this SSH session? This will kill all running processes.")) {{
+                return;
+            }}
+            debugLog("Close session button clicked");
+            try {{
+                // First close the WebSocket
+                if (window.ws && window.ws.readyState !== undefined) {{
+                    if (window.ws.readyState === WebSocket.OPEN) {{
+                        window.ws.close();
+                    }}
+                }}
+                // Then call the close session API
+                fetch("/api/sessions/close?server_id=" + serverId + "&session=default", {{
+                    method: "POST",
+                    credentials: "same-origin"
+                }})
+                .then(function(r) {{
+                    if (r.ok) {{
+                        if (term) {{
+                            term.write("\r\n\x1b[31mSession terminated.\x1b[0m\r\n");
+                        }}
+                    }} else {{
+                        if (term) {{
+                            term.write("\r\n\x1b[31mFailed to terminate session.\x1b[0m\r\n");
+                        }}
+                    }}
+                }})
+                .catch(function(e) {{
+                    debugLog("Error closing session: " + e.message, true);
+                }});
+                if (typeof stopPing !== "undefined") stopPing();
+            }} catch (e) {{
+                debugLog("Error in closeSession: " + e.message, true);
             }}
         }}
 
@@ -775,13 +820,32 @@ async fn handle_socket(
         });
 
         // Store session in manager
-        let session = state.ssh_session_manager.store_session(
+        // Handle race condition: if another task created this session concurrently,
+        // use the existing session and clean up our unused SSH connection
+        let ssh_cmd_tx_clone = ssh_cmd_tx.clone();
+        let session = match state.ssh_session_manager.store_session(
             params.server_id,
             &params.session,
             ssh_client,
             ssh_cmd_tx,
             broadcast_tx,
-        );
+        ) {
+            Ok(new_session) => {
+                tracing::info!("Created new session: {}", new_session.id);
+                new_session
+            }
+            Err(existing_session) => {
+                // Race condition: another task created this session first.
+                // Clean up our unused SSH connection by sending Close command.
+                tracing::warn!(
+                    "Session {} already exists (race condition), using existing session",
+                    existing_session.id
+                );
+                // The SSH I/O task we spawned will exit when it receives Close
+                let _ = ssh_cmd_tx_clone.try_send(SshCommand::Close);
+                existing_session
+            }
+        };
 
         // Send success message
         {
