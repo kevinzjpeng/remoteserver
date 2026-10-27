@@ -169,6 +169,20 @@ pub async fn terminal_page(
                 <span id="ping-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #28a745;"></span>
                 <span id="ping-value">--ms</span>
             </div>
+            <div id="font-size-control" style="display: flex; align-items: center; gap: 4px; margin-left: 12px; font-size: 12px; color: #aaa;">
+                <label for="font-size-select" style="cursor: default;">Font:</label>
+                <select id="font-size-select" style="background: #3a3a3a; color: #ddd; border: 1px solid #555; border-radius: 3px; padding: 2px 4px; font-size: 12px; cursor: pointer;">
+                    <option value="10">10px</option>
+                    <option value="11">11px</option>
+                    <option value="12">12px</option>
+                    <option value="13">13px</option>
+                    <option value="14">14px</option>
+                    <option value="16">16px</option>
+                    <option value="18">18px</option>
+                    <option value="20">20px</option>
+                    <option value="24">24px</option>
+                </select>
+            </div>
         </div>
         <div style="display: flex; align-items: center;">
             <a href="/topology" title="返回拓扑图">
@@ -252,11 +266,12 @@ pub async fn terminal_page(
         // Initialize terminal
         var term;
         var fitAddon;
+        var savedFontSize = localStorage.getItem('terminalFontSize') || '14';
         try {{
             debugLog("Initializing terminal...");
             term = new Terminal({{
                 cursorBlink: true,
-                fontSize: 14,
+                fontSize: parseInt(savedFontSize),
                 fontFamily: "'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'SF Mono', Monaco, Menlo, Consolas, 'Ubuntu Mono', monospace",
                 theme: {{
                     background: "#000000",
@@ -293,10 +308,24 @@ pub async fn terminal_page(
             term.open(document.getElementById("terminal-container"));
             fitAddon.fit();
             debugLog("Terminal initialized successfully");
+
+            // Set dropdown to saved value
+            document.getElementById('font-size-select').value = savedFontSize;
         }} catch (e) {{
             debugLog("Failed to initialize terminal: " + e.message, true);
             showDebug("Terminal init error: " + e.message, true);
         }}
+
+        // Font size change handler
+        document.getElementById('font-size-select').addEventListener('change', function(e) {{
+            var newSize = parseInt(e.target.value);
+            if (term) {{
+                term.setOption('fontSize', newSize);
+                if (fitAddon) fitAddon.fit();
+                localStorage.setItem('terminalFontSize', newSize.toString());
+                debugLog("Font size changed to " + newSize + "px");
+            }}
+        }});
 
         // Disconnect function (detach - session continues running)
         function disconnect() {{
